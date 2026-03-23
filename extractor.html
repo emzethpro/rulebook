@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JSON Key Extractor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0f14;
+      --surface: #13181f;
+      --surface2: #1a2030;
+      --border: #252d3d;
+      --accent: #4fffb0;
+      --accent2: #00d4ff;
+      --text: #e8edf5;
+      --muted: #5a6a82;
+      --danger: #ff5f6d;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Montserrat', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    header { margin-bottom: 36px; }
+
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      background: rgba(79, 255, 176, 0.08);
+      border: 1px solid rgba(79, 255, 176, 0.2);
+      padding: 4px 12px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: clamp(26px, 5vw, 42px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--text) 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 9px 18px;
+      border-radius: 7px;
+      cursor: pointer;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .upload-btn:hover { background: var(--border); border-color: var(--accent2); color: var(--accent2); }
+
+    input[type="file"] { display: none; }
+
+    .file-name {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent2);
+      background: rgba(0,212,255,0.07);
+      border: 1px solid rgba(0,212,255,0.2);
+      padding: 5px 11px;
+      border-radius: 5px;
+      max-width: 220px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: none;
+    }
+
+    /* ── GRID ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .card.drag-over {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 2px rgba(0,212,255,0.15);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.7;
+      resize: none;
+      padding: 16px;
+      display: block;
+      height: 260px;
+    }
+
+    textarea::placeholder { color: var(--muted); }
+
+    /* ── KEY ROW ── */
+    .key-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+      align-items: stretch;
+    }
+
+    .key-card {
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .key-card .card-header {
+      border-bottom: none;
+      border-right: 1px solid var(--border);
+      min-width: 110px;
+      height: 52px;
+      flex-shrink: 0;
+    }
+
+    .key-card input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text);
+      padding: 14px 16px;
+    }
+
+    .key-card input::placeholder { color: var(--muted); }
+
+    .extract-btn {
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0 34px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: var(--accent);
+      color: #050a0a;
+      transition: all 0.18s;
+      white-space: nowrap;
+      height: 52px;
+    }
+
+    .extract-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(79,255,176,0.25);
+    }
+    .extract-btn:active { transform: scale(0.97) translateY(0); }
+
+    /* ── OUTPUT ── */
+    .output-card { margin-bottom: 16px; }
+
+    #output {
+      height: 200px;
+      color: var(--accent);
+    }
+
+    /* ── ACTIONS BAR ── */
+    .actions {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      border-radius: 7px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      transition: all 0.15s;
+      font-family: var(--sans);
+    }
+
+    .action-btn:hover { background: var(--border); }
+    .action-btn:active { transform: scale(0.97); }
+
+    .action-btn.copy { color: var(--accent2); border-color: rgba(0,212,255,0.25); }
+    .action-btn.copy:hover { background: rgba(0,212,255,0.08); }
+
+    .action-btn.dl { color: var(--accent); border-color: rgba(79,255,176,0.25); }
+    .action-btn.dl:hover { background: rgba(79,255,176,0.08); }
+
+    /* ── STATUS ── */
+    .status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    .status.error { color: var(--danger); }
+    .status.success { color: var(--accent); }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .count-pill {
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(79,255,176,0.08);
+      color: var(--accent);
+      border: 1px solid rgba(79,255,176,0.2);
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="badge">Utility Tool</div>
+    <h1>JSON Key Extractor</h1>
+    <p class="subtitle">Paste or upload JSON &nbsp;·&nbsp; Specify a key &nbsp;·&nbsp; Extract &amp; download</p>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="toolbar-label">Input:</span>
+    <label class="upload-btn" for="fileUpload">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Upload .json File
+    </label>
+    <input type="file" id="fileUpload" accept=".json,application/json" onchange="handleFileUpload(event)" />
+    <span class="file-name" id="fileName"></span>
+  </div>
+
+  <!-- Main grid -->
+  <div class="grid">
+    <!-- JSON Input -->
+    <div class="card" id="jsonCard">
+      <div class="card-header">
+        <div class="dot" style="background:var(--accent);box-shadow:0 0 7px var(--accent)"></div>
+        <span class="card-title">JSON Input</span>
+        <span class="count-pill" id="arrayCount" style="display:none;margin-left:auto"></span>
+      </div>
+      <textarea id="jsonInput"
+        placeholder="Paste your JSON here...&#10;&#10;Supports:&#10;  • Single object  {}&#10;  • Array of objects  [{}, ...]&#10;&#10;Or drag &amp; drop a .json file here."
+        ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+      </textarea>
+    </div>
+
+    <!-- Keys preview -->
+    <div class="card">
+      <div class="card-header">
+        <div class="dot" style="background:var(--accent2);box-shadow:0 0 7px var(--accent2)"></div>
+        <span class="card-title">Available Keys</span>
+      </div>
+      <textarea id="keysPreview" readonly
+        placeholder="// keys will list here once JSON is loaded..."
+        style="height:260px;color:var(--muted);font-size:12px;cursor:default">
+      </textarea>
+    </div>
+  </div>
+
+  <!-- Key input + extract button -->
+  <div class="key-row">
+    <div class="card key-card">
+      <div class="card-header">
+        <div class="dot" style="background:#b47fff;box-shadow:0 0 7px #b47fff"></div>
+        <span class="card-title">Key</span>
+      </div>
+      <input type="text" id="keyInput" placeholder='e.g.  content_text  — press Enter to extract' />
+    </div>
+    <button class="extract-btn" onclick="extract()">Extract</button>
+  </div>
+
+  <!-- Output -->
+  <div class="card output-card">
+    <div class="card-header">
+      <div class="dot" style="background:#b47fff;box-shadow:0 0 7px #b47fff"></div>
+      <span class="card-title">Extracted Output</span>
+    </div>
+    <textarea id="output" readonly placeholder="// results will appear here..."></textarea>
+    <div class="actions">
+      <button class="action-btn copy" onclick="copyOutput()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        Copy to Clipboard
+      </button>
+      <button class="action-btn dl" onclick="downloadTxt()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download .txt
+      </button>
+      <button class="action-btn dl" onclick="downloadJson()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download .json
+      </button>
+      <div class="status" id="status">
+        <div class="status-dot"></div>
+        <span>Waiting for input...</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let lastKey = '';
+  let lastValues = [];
+
+  // ── File Upload ────────────────────────────────────────────
+  function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (file) readFile(file);
+  }
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('jsonInput').value = e.target.result.trim();
+      const fn = document.getElementById('fileName');
+      fn.textContent = file.name;
+      fn.style.display = 'inline-block';
+      previewKeys();
+      setStatus('success', `Loaded: ${file.name}`);
+    };
+    reader.readAsText(file);
+  }
+
+  // ── Drag & Drop ────────────────────────────────────────────
+  function dragOver(e) {
+    e.preventDefault();
+    document.getElementById('jsonCard').classList.add('drag-over');
+  }
+  function dragLeave() {
+    document.getElementById('jsonCard').classList.remove('drag-over');
+  }
+  function dropFile(e) {
+    e.preventDefault();
+    document.getElementById('jsonCard').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  }
+
+  // ── Live Key Preview ───────────────────────────────────────
+  document.getElementById('jsonInput').addEventListener('input', previewKeys);
+
+  function previewKeys() {
+    const raw = document.getElementById('jsonInput').value.trim();
+    const preview = document.getElementById('keysPreview');
+    const pill = document.getElementById('arrayCount');
+
+    if (!raw) { preview.value = ''; pill.style.display = 'none'; return; }
+
+    try {
+      const parsed = JSON.parse(raw);
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      pill.style.display = items.length > 1 ? 'inline-block' : 'none';
+      pill.textContent = `${items.length} objects`;
+      const allKeys = [...new Set(items.flatMap(i =>
+        typeof i === 'object' && i !== null ? Object.keys(i) : []
+      ))];
+      preview.value = allKeys.join('\n');
+    } catch {
+      preview.value = '// invalid JSON';
+    }
+  }
+
+  // ── Extract ────────────────────────────────────────────────
+  function extract() {
+    const raw = document.getElementById('jsonInput').value.trim();
+    const key = document.getElementById('keyInput').value.trim();
+    const output = document.getElementById('output');
+
+    output.value = '';
+    lastValues = [];
+    lastKey = '';
+
+    if (!raw) return setStatus('error', 'No JSON provided.');
+    if (!key) return setStatus('error', 'No key specified.');
+
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch (e) { return setStatus('error', 'Invalid JSON — ' + e.message); }
+
+    const items = Array.isArray(parsed) ? parsed : [parsed];
+    const values = [];
+    for (const item of items) {
+      if (typeof item === 'object' && item !== null && key in item) {
+        values.push(item[key]);
+      }
+    }
+
+    if (!values.length) return setStatus('error', `Key "${key}" not found.`);
+
+    lastKey = key;
+    lastValues = values;
+
+    if (values.length === 1) {
+      const v = values[0];
+      output.value = typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v);
+    } else {
+      output.value = values.map((v, i) =>
+        `[${i + 1}]  ${typeof v === 'object' ? JSON.stringify(v) : v}`
+      ).join('\n');
+    }
+
+    setStatus('success', `"${key}" — ${values.length} value${values.length !== 1 ? 's' : ''} extracted`);
+  }
+
+  // ── Copy ───────────────────────────────────────────────────
+  function copyOutput() {
+    const val = document.getElementById('output').value;
+    if (!val) return;
+    navigator.clipboard.writeText(val).then(() => {
+      const btn = document.querySelector('.action-btn.copy');
+      const orig = btn.innerHTML;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.innerHTML = orig; }, 1600);
+    });
+  }
+
+  // ── Download helpers ───────────────────────────────────────
+  function triggerDownload(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function downloadTxt() {
+    const val = document.getElementById('output').value;
+    if (!val) return;
+    triggerDownload(val, `${lastKey || 'extracted'}.txt`, 'text/plain');
+  }
+
+  function downloadJson() {
+    if (!lastValues.length) return;
+    const content = JSON.stringify(
+      lastValues.length === 1 ? lastValues[0] : lastValues,
+      null, 2
+    );
+    triggerDownload(content, `${lastKey || 'extracted'}.json`, 'application/json');
+  }
+
+  // ── Status ─────────────────────────────────────────────────
+  function setStatus(type, msg) {
+    const el = document.getElementById('status');
+    el.className = 'status ' + type;
+    el.innerHTML = `<div class="status-dot"></div><span>${msg}</span>`;
+  }
+
+  document.getElementById('keyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') extract();
+  });
+</script>
+</body>
+</html>
