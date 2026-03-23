@@ -204,69 +204,297 @@ function toggleKey(){const inp=document.getElementById('api-key');const btn=docu
 function switchTab(tab,el){activeTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');if(rawMarkdown)renderOutput();}
 function parseTweetArray(){const src=fileContent||document.getElementById('tweet-paste').value.trim();if(!src)return null;try{const json=JSON.parse(src);if(json.examples)return json.examples.map(e=>e.text).filter(Boolean);if(Array.isArray(json)){if(typeof json[0]==='string')return json.filter(Boolean);if(json[0]?.text)return json.map(e=>e.text).filter(Boolean);}}catch{}return src.split(/\n{2,}|^---$/m).map(t=>t.trim()).filter(t=>t.length>5);}
 function getInputText(){const arr=parseTweetArray();return arr?arr.join('\n\n---\n\n'):null;}
-function bChunkPrompt(tweets,i,total){return `Analyze writing style in this tweet batch (${i+1}/${total}). Output ONLY a compact report with these exact fields — one line each, be specific and concrete:
+function bChunkPrompt(tweets,i,total){return `Analyze the writing style in this tweet batch (${i+1}/${total}). Output ONLY a compact report. One line per field. Be specific — give real examples and measurements, not abstractions.
 
-CADENCE_DOMINANT: [short+punchy / long+flowing / mixed — and HOW mixed: e.g. "2-3 short sentences then one long closer"]
-CADENCE_SENTENCE_LENGTH: [estimated avg words per sentence, e.g. "~8 words"]
-CADENCE_RHYTHM_DEVICE: [specific rhythm tricks observed: e.g. "single-word sentences for emphasis", "sentence pairs where second mirrors first", "trailing short line after long setup"]
-CADENCE_PARAGRAPH_LENGTH: [how many sentences per tweet/paragraph on average]
+STRUCT_LENGTH: [avg words per sentence, e.g. "~9 words". Short <10 / medium 10-20 / long 20+]
+STRUCT_TYPE: [short+punchy / long+flowing / mixed — if mixed, describe the exact pattern, e.g. "3 short then 1 long kicker"]
+STRUCT_FRAGMENTS: [uses sentence fragments: yes/no — give example pattern if yes]
+STRUCT_COMPLEXITY: [simple subject-verb / compound clauses / nested subordinates]
 
-VOCAB_REGISTER: [academic / conversational / clinical / slang / jargon / plain — be specific]
-VOCAB_SIGNATURE_WORDS: [exact recurring words/phrases this author uses, comma-separated]
-VOCAB_LEVEL: [simple everyday words / mid-range / complex multi-syllable — give examples]
-VOCAB_DOMAIN: [what subject-area vocabulary appears, e.g. "therapy terms", "startup jargon"]
+RHYTHM_FLOW: [how sentences connect: abrupt cuts / conjunctions / semicolons / em-dash pivots]
+RHYTHM_PARA_SIZE: [avg sentences per paragraph or tweet]
+RHYTHM_BEAT_PATTERNS: [list the 2-3 most common structural patterns, e.g. "statement → reframe", "observation → implication", "setup → numbered list"]
+RHYTHM_OPENERS: [how paragraphs/tweets typically begin — declarative / question / fragment / quote]
+RHYTHM_CLOSERS: [how paragraphs/tweets typically end — kicker line / call to action / open question / quiet statement]
 
-FORMAT_BULLETS: [uses bullet/numbered lists: yes/no/sometimes — and how often, what for]
-FORMAT_EM_DASH: [uses em-dash: yes/no — and how: pivot, aside, dramatic pause?]
-FORMAT_BOLD_ITALIC: [uses bold/italic for emphasis: yes/no — what gets emphasized?]
-FORMAT_RHETORICAL_Q: [uses rhetorical questions: yes/no/often — gives examples of pattern]
-FORMAT_CAPS: [uses ALL CAPS: yes/no — for what purpose?]
-FORMAT_LINE_BREAKS: [uses deliberate single-line breaks for pacing: yes/no]
-FORMAT_COLON_TEASE: [uses "X:" opener to tease what follows: yes/no/pattern]
-FORMAT_ELLIPSIS: [uses ellipsis for trailing thoughts: yes/no]
+VOCAB_LEVEL: [simple/everyday / mid-range / complex/academic — give 3 example words]
+VOCAB_FORMALITY: [very formal / formal / neutral / casual / very casual]
+VOCAB_DOMAIN: [what subject-area terms appear, e.g. "therapy", "finance", "tech"]
+VOCAB_SIGNATURE: [exact recurring words and phrases verbatim, comma-separated — minimum 5]
+VOCAB_PREFERRED_OVER: [word choices that reveal preference, e.g. "says 'kids' not 'children'", "says 'learn' not 'acquire'"]
 
-BANNED_PHRASES: [exact phrases or words that NEVER appear in this writing — especially generic filler like "In conclusion", "It's important to note", "Delve into", "Leverage", "Utilize", "Game-changer", "Paradigm", "At the end of the day"]
-BANNED_STRUCTURES: [sentence structures that never appear, e.g. "never uses passive voice", "never starts with 'I think'", "no hedging language"]
-BANNED_TONE: [tonal registers that never appear, e.g. "never sarcastic", "never formal/academic", "never uses exclamation marks"]
+PUNCT_EM_DASH: [yes/no — how used: pivot / aside / pause / never]
+PUNCT_ELLIPSIS: [yes/no — how used: trailing thought / soft transition / tension / never]
+PUNCT_COLON: [yes/no — how used: list intro / tease opener / explanation / never]
+PUNCT_EXCLAMATION: [rare/frequent/never — what triggers it]
+PUNCT_CAPS: [ALL CAPS used: yes/no — exact purpose, e.g. "thread hook only", "never"]
+PUNCT_OTHER: [any other notable punctuation habit]
+
+SIGNATURE_PHRASES: [exact phrases that repeat verbatim across multiple tweets — quote them]
+SIGNATURE_OPENERS: [exact recurring opening formulas, e.g. "Here's why:", "The truth is"]
+SIGNATURE_CLOSERS: [exact recurring closing formulas, e.g. "You've got this.", "Break the chain."]
+SIGNATURE_CONSTRUCTIONS: [sentence templates that recur, e.g. "It's not X. It's Y.", "Instead of X… try Y."]
+
+RHETORICAL_Q_FREQ: [never / rare / occasional / frequent]
+RHETORICAL_Q_FUNCTION: [engage reader / open argument / challenge assumption / none]
+RHETORICAL_Q_PLACEMENT: [opener / middle / closer / varies]
+
+ANALOGY_FREQ: [never / rare / occasional / frequent]
+ANALOGY_TYPE: [concrete everyday / historical / scientific / abstract / personal story]
+ANALOGY_STRUCTURE: [how comparisons are framed, e.g. "X is like Y", "Think of it as...", "Imagine..."]
+
+TONE_CORE: [sarcastic / sincere / authoritative / conversational / dry / warm / blunt / other]
+TONE_EMOTIONAL_TEMP: [cold/detached / neutral / warm / passionate / volatile]
+TONE_AUTHORITY: [expert lecturing / peer sharing / guide coaching / friend advising]
+TONE_VULNERABILITY: [never shows personal struggle / occasionally personal / frequently vulnerable]
+TONE_SECOND_PERSON: [addresses reader as "you": often / sometimes / never]
+
+ARGUMENT_STRUCTURE: [how ideas are built: assertion → evidence / problem → solution / observation → implication / story → lesson]
+ARGUMENT_OPPOSING_VIEWS: [acknowledges counterarguments: never / rarely / sometimes / often — and how]
+ARGUMENT_REASONING: [deductive top-down / inductive bottom-up / anecdote-led / list-based]
+SUBJECT_CORE_THEMES: [the 3-5 topics this author returns to most]
+SUBJECT_EMPHASIS: [what they care most about stressing — outcomes / process / emotions / data / relationships]
+
+BANNED_PHRASES: [words/phrases that NEVER appear — plus flag any of these if absent: "In conclusion", "It's important to note", "Delve into", "Unpack", "Leverage", "Game-changer", "At the end of the day", "Navigate" (abstract), "Takeaway", "Moving forward", "Shed light on", "Simply put", "That being said"]
+BANNED_STRUCTURES: [sentence structures that never appear — e.g. "no passive voice", "never hedges with 'I think maybe'"]
+BANNED_TONE: [tonal registers completely absent from this voice]
 
 ---
 ${tweets}`;}
 
-function bSynthPrompt(reports,total,opts){
-const{depth,format,output}=opts;
-const dI={brief:'3-5 concrete rules per section.',standard:'5-7 rules per section with inline examples.',deep:'7-10 rules per section, include edge cases, counterexamples, and specific word lists.'}[depth];
-const fmtI={structured:'Use ## section headings and bullet points.',prose:'Flowing prose paragraphs, one per section.',checklist:'Flat numbered list, no headings.'}[format];
-const oI=output==='prompt-ready'
-  ?'This rulebook will be pasted directly into an AI prompt as a style instruction. Write every rule as a direct command: "Do X", "Never say Y", "Always Z". Make rules specific enough that an AI could apply them mechanically.'
-  :'Write as an editorial style guide for human writers — explain the why behind each rule.';
-return `You are synthesizing ${reports.length} style analysis reports covering ${total} tweets by the same author. Produce one authoritative, highly specific style rulebook organized around FOUR core sections.
+const STRUCTURE_TEMPLATE = `
+OUTPUT STRUCTURE — follow this skeleton exactly. Replace every [bracketed placeholder] with content derived from the source. Do not add or remove sections.
 
-${oI}
-Depth per section: ${dI}
-Format: ${fmtI}
+# Voice Rulebook
 
-THE FOUR REQUIRED SECTIONS — cover each thoroughly:
-
-## 1. Cadence & Rhythm
-Rules about sentence length, pacing, paragraph size, and rhythm devices. Be concrete: give the actual pattern (e.g. "Average sentence is 8-12 words. One-word or two-word sentences appear for emphasis after a longer setup. Paragraphs rarely exceed 3 sentences."). Note if short/long sentences are mixed and the specific pattern of that mixing.
-
-## 2. Vocabulary & Register
-Rules about exact word choices, vocabulary level, domain register, and recurring signature words. List the actual words/phrases this author uses repeatedly. Note whether the register is conversational, clinical, academic, or a specific mix. Flag any jargon that is signature to this voice.
-
-## 3. Formatting Quirks
-Rules about every structural habit: use of bullets/lists, em-dashes, bold/italic, rhetorical questions, ALL CAPS, colons as teasers, ellipsis, line breaks as pacing tools. For each quirk, note not just whether it appears but HOW it is used and what it signals.
-
-## 4. The Banned List (Critical — Do Not Omit)
-This section is the most important for replication accuracy. List:
-- BANNED WORDS/PHRASES: Exact words and phrases this author never uses. Include generic AI filler that must be banned: "In conclusion", "It's important to note", "Delve into", "Leverage", "Utilize", "Game-changer", "Paradigm shift", "At the end of the day", "Unpack", "Explore", "Navigate", "It's worth noting", "Importantly", "Firstly/Secondly/Finally", "In summary", "To summarize". Add any others absent from the corpus.
-- BANNED SENTENCE STRUCTURES: Constructions this author never uses (passive voice, hedging language, throat-clearing openers, etc.)
-- BANNED TONES: Tonal registers that never appear in this voice.
+[One sentence describing whose voice this encodes and what it is for.]
 
 ---
-Weigh patterns by cross-batch frequency — if a pattern appears in most batches, it is a core rule.
-Start with a 2-sentence voice fingerprint at the top.
-End with a "Quick Reference" block: the 6 most important rules to memorize, written as direct commands.
-Never reproduce tweet text verbatim.
+
+## 1. Sentence Structure
+
+### Dominant Type
+- **[Short/Long/Mixed — state which].** [Specific description: give estimated avg word count. If mixed, describe the exact mixing pattern — e.g. "3 short punchy sentences followed by one longer closing thought."]
+- [Rule about fragments: does the author use them? How? Example pattern.]
+- [Rule about clause complexity: simple subject-verb vs nested subordinate clauses.]
+
+### How Sentences Connect
+- [Rule about how one sentence flows into the next — abrupt cuts, conjunctions, em-dash pivots, semicolons, etc.]
+- [Any other structural connection habit.]
+
+---
+
+## 2. Rhythm & Pacing
+
+### Paragraph/Post Architecture
+- [Rule about typical paragraph length — number of sentences, lines.]
+- **How posts open** — [Exact description of how paragraphs and posts tend to begin: declarative punch / question / fragment / quote drop / observation.]
+- **How posts close** — [Exact description of how they end: kicker line / call to action / quiet statement / rhetorical question.]
+
+### Beat Patterns (most common, in order of frequency)
+1. **[Pattern name]** — [Description of the pattern and how it functions in the writing.]
+2. **[Pattern name]** — [Description.]
+3. **[Pattern name]** — [Description.]
+[Add more if found — minimum 3.]
+
+### Line Breaks
+- [Rules about how line breaks are used — as pacing tools, breath markers, dramatic pauses — not just formatting.]
+
+---
+
+## 3. Vocabulary
+
+### Register & Level
+- **[Register: formal/casual/conversational/clinical/etc].** [Describe what this sounds like and who the assumed audience is.]
+- **Vocabulary complexity:** [simple everyday / mid-range / academic] — example words: [3 examples from the corpus.]
+- **Domain language:** [What subject-area terms appear — therapy, finance, tech, etc.]
+
+### Preferred Words Over Synonyms
+- Prefers "[word A]" over "[word B]" — [note why this matters for the voice]
+[List every detected word preference — minimum 3 pairs.]
+
+### Signature Phrases & Constructions
+- "[exact recurring phrase]" — [what it is used for]
+- "[exact recurring phrase]"
+[List every signature phrase and sentence construction found verbatim — minimum 8.]
+
+### Tone Markers
+- [Specific tone quality 1: earnest/ironic, warm/cold, confident/hedging — with example pattern.]
+- [Tone quality 2: notes on vulnerability, directness, use of first/second person.]
+- [Any other consistent tonal signal.]
+
+---
+
+## 4. Punctuation Habits
+
+### Signature Marks
+- **Em-dash (—)** — [How it is used: pivot / aside / dramatic pause / not used. Frequency.]
+- **Ellipsis (…)** — [How it is used: trailing thought / soft transition / tension / not used.]
+- **Colon (:)** — [How it is used: list intro / tease opener ("Here's why:") / explanation / not used.]
+- **Exclamation mark (!)** — [Frequency: rare / frequent / never. What triggers it.]
+- **ALL CAPS** — [Used: yes/no. Exact purpose — e.g. "thread hooks only", "for single-word emphasis", "never".]
+[Add any other notable punctuation habit found in the corpus.]
+
+### Structural Punctuation
+- [Rule about sentence-ending punctuation habits — e.g. "short kicker lines always end with a period, never an ellipsis."]
+- [Any other pattern about how punctuation signals structure rather than grammar.]
+
+---
+
+## 5. Signature Phrases & Repeated Words
+
+### Exact Recurring Phrases
+- "[phrase]"
+- "[phrase]"
+[List every phrase found verbatim that appears more than once — no minimum, but be exhaustive.]
+
+### Recurring Openers
+- "[exact opening formula]"
+[List every opener pattern found — e.g. "Here's why:", "The truth is", "Most people..."]
+
+### Recurring Closers
+- "[exact closing formula]"
+[List every closer pattern found — e.g. "You've got this.", "Break the chain.", "That's the point."]
+
+### Sentence Templates
+- "[construction template]" — [how it is used]
+[List every reusable sentence structure found — e.g. "It's not X. It's Y.", "Instead of [A]… try [B].", "We don't [X] by [Y]. We [X] by [Z]."]
+
+---
+
+## 6. Paragraph & Post Architecture
+
+### Opening Strategy
+- [How the very first sentence of a post or paragraph typically reads — its structure, length, purpose.]
+- [What the opening line almost never does.]
+
+### Closing Strategy
+- [How the last sentence lands — its length, function, emotional weight.]
+- [What the closing line almost never does.]
+
+### Internal Transitions
+- [How the author moves from one point to the next inside a post — what words or devices they use, or don't use.]
+- [Whether transitions are marked explicitly or implied by line breaks alone.]
+
+---
+
+## 7. Rhetorical Questions
+
+### Usage Pattern
+- **Frequency:** [never / rare / occasional / frequent]
+- **Function:** [What the rhetorical question is doing — engaging reader / opening an argument / challenging assumption / building tension.]
+- **Placement:** [Where they appear — as openers / mid-post / closers / varies.]
+- [Example of the typical rhetorical question pattern used — describe the structure without quoting verbatim.]
+
+---
+
+## 8. Analogies & Examples
+
+### Usage Pattern
+- **Frequency:** [never / rare / occasional / frequent]
+- **Type:** [What kinds of comparisons — concrete everyday / historical / scientific / personal story / hypothetical scenario.]
+- **Structure:** [How comparisons are framed — "X is like Y", "Think of it as...", "Imagine...", "It's the difference between X and Y."]
+- [Any rule about when examples appear — to open, to prove a point, to close.]
+
+---
+
+## 9. Tone & Voice
+
+### Core Register
+- **[Primary tone adjective].** [Describe the overall feeling of reading this voice — what it sounds like, what it feels like to the reader.]
+- **Emotional temperature:** [cold/detached / neutral / warm / passionate — and how it fluctuates if it does.]
+- **Authority level:** [Expert lecturing / peer sharing / coach guiding / friend advising — describe the relationship implied with the reader.]
+
+### Vulnerability & Persona
+- [Rules about when and how the author reveals personal experience or struggle — "I used to...", confessions, admissions.]
+- [Rules about second person "you" — how often, how warm or direct it feels.]
+- [Any other persona signal — humor, gravity, earnestness, etc.]
+
+---
+
+## 10. Argument Structure & Subject Matter
+
+### How Arguments Are Built
+- **Primary reasoning pattern:** [Assertion → evidence / Problem → solution / Observation → implication / Story → lesson / List of examples — describe the most common one.]
+- [Secondary reasoning pattern if one exists.]
+- [How long a single argument typically runs before it resolves.]
+
+### Handling Opposing Views
+- **[Never / Rarely / Sometimes / Often] acknowledges counterarguments.** [How — by steelmanning, dismissing, reframing, or simply ignoring.]
+
+### Core Themes & Emphasis
+- [Theme 1 — what the author returns to most, and what angle they typically take on it.]
+- [Theme 2.]
+- [Theme 3.]
+- **What they emphasize most:** [outcomes / process / emotions / data / relationships / behaviour change / etc.]
+
+---
+
+## Negative Prompt — NEVER Use These
+
+### Banned Phrases (generic AI / corporate / academic)
+- "In conclusion"
+- "It's important to note"
+- "Delve into" / "delve deeper"
+- "Let's unpack this"
+- "At the end of the day"
+- "In today's world" / "In this day and age"
+- "Game-changer" / "paradigm shift"
+- "Leverage" (as a verb)
+- "Unlock your potential"
+- "Dive in" / "deep dive"
+- "Navigate" (used abstractly)
+- "Fostering" / "cultivating" (when used generically)
+- "Takeaway" / "key takeaway"
+- "Simply put"
+- "That being said"
+- "Moving forward"
+- "Shed light on"
+- "It goes without saying"
+- "Without further ado"
+- "It begs the question"
+[Add every additional phrase confirmed absent from this specific corpus.]
+
+### Banned Styles
+- **[Style label].** [Specific behaviours this bans — precise, not vague.]
+[Minimum 6 entries. Each must have a bold label.]
+
+### Banned Structures
+- Never [specific sentence opener or construction this author never uses.]
+[Minimum 4 entries.]
+
+---
+
+## How to Apply This Rulebook
+
+1. **Read the raw idea** — [What to extract from the user's input for this voice.]
+2. **Choose the beat pattern** — [How to pick from Section 2 patterns for this specific idea.]
+3. **Write in register** — [Reminder about vocabulary level, domain, and preferred words from Section 3.]
+4. **Apply punctuation and formatting** — [Key reminders from Sections 4–6.]
+5. **Run the banned list check** — [How to audit the draft against the Negative Prompt.]
+6. **Read aloud** — [What the final output must sound and feel like for this voice to be authentic.]
+
+RULES FOR FILLING IN THE TEMPLATE:
+- Replace every [bracketed placeholder] with real content from the source corpus.
+- Every rule must be specific — word counts, quoted phrases, exact patterns. No vague generalities.
+- Sections 5 (Signature Phrases) and the Negative Prompt must be exhaustive — list every instance found.
+- Never reproduce tweet text verbatim.
+- The How to Apply steps must be tailored to this specific voice, not generic.
+`;
+
+function bSynthPrompt(reports,total,opts){
+const{depth,output}=opts;
+const dI={brief:'3-4 concrete rules per sub-section.',standard:'5-6 rules per sub-section with inline examples where useful.',deep:'7-10 rules per sub-section — exhaustive, with edge cases, specific word lists, and counterexamples.'}[depth];
+const oI=output==='prompt-ready'
+  ?'This rulebook will be pasted directly into an AI system prompt as a style constraint. Write every rule as a hard, unambiguous command: "Do X", "Never Y", "Always Z". Rules must be specific enough that an AI applies them mechanically — no interpretation required.'
+  :'Write as an editorial style guide a human writer would reference and consult. Explain the reasoning behind rules where it helps understanding.';
+return `You are synthesizing ${reports.length} style analysis reports covering ${total} tweets by the same author. Your goal is one authoritative Voice Rulebook that captures everything needed to replicate this writing style exactly.
+
+${oI}
+Density: ${dI}
+Cross-batch weighting: a pattern appearing in most batches = core rule. A pattern in only one batch = omit unless highly distinctive.
+
+${STRUCTURE_TEMPLATE}
 
 ---
 PATTERN REPORTS (${reports.length} batches × ~${CHUNK_SIZE} tweets each):
@@ -274,43 +502,23 @@ PATTERN REPORTS (${reports.length} batches × ~${CHUNK_SIZE} tweets each):
 ${reports.map((r,i)=>`=== BATCH ${i+1} ===\n${r}`).join('\n\n')}`;}
 
 function bDirectPrompt(tweets,opts){
-const{depth,format,output}=opts;
-const dI={brief:'3-5 concrete rules per section.',standard:'5-7 rules per section with inline examples.',deep:'7-10 rules per section, include edge cases and specific word lists.'}[depth];
-const fmtI={structured:'Use ## section headings and bullet points.',prose:'Flowing prose paragraphs, one per section.',checklist:'Flat numbered list, no headings.'}[format];
+const{depth,output}=opts;
+const dI={brief:'3-4 concrete rules per sub-section.',standard:'5-6 rules per sub-section with inline examples where useful.',deep:'7-10 rules per sub-section — exhaustive, with edge cases and specific word lists.'}[depth];
 const oI=output==='prompt-ready'
-  ?'This rulebook will be pasted directly into an AI prompt as a style instruction. Write every rule as a direct command: "Do X", "Never say Y", "Always Z". Specific enough that an AI could apply them mechanically.'
-  :'Write as an editorial style guide for human writers — explain the why behind each rule.';
-return `You are a writing style analyst. Read these tweets and produce a precise, actionable style rulebook organized around FOUR core sections.
+  ?'This rulebook will be pasted directly into an AI system prompt as a style constraint. Write every rule as a hard, unambiguous command: "Do X", "Never Y", "Always Z". Rules must be specific enough that an AI applies them mechanically — no interpretation required.'
+  :'Write as an editorial style guide a human writer would reference and consult. Explain the reasoning behind rules where it helps understanding.';
+return `You are a writing style analyst. Your goal is one authoritative Voice Rulebook that captures everything needed to replicate this writing style exactly.
 
 ${oI}
-Depth: ${dI}
-Format: ${fmtI}
+Density: ${dI}
 
-THE FOUR REQUIRED SECTIONS — analyze each deeply:
+${STRUCTURE_TEMPLATE}
 
-## 1. Cadence & Rhythm
-Analyze sentence length (give estimated average word count), pacing patterns, paragraph/tweet length, and specific rhythm devices. Does the author mix short and long sentences? If so, describe the exact pattern of that mixing. Note any single-line or single-word sentences used for emphasis. Note how tweets/paragraphs tend to open, build, and close rhythmically.
-
-## 2. Vocabulary & Register
-Identify the vocabulary level (simple/mid/complex), the domain register (conversational, clinical, academic, jargon-heavy, etc.), and list the actual recurring signature words and phrases this author uses. Note any words they prefer over synonyms (e.g. always "kids" not "children", always "learn" not "acquire"). Describe what their word choices signal about their assumed audience.
-
-## 3. Formatting Quirks
-Catalog every structural habit with specifics: use of bullet points or numbered lists (how often, what for), em-dashes (how used), bold or italic emphasis (what gets emphasized), rhetorical questions (how frequent, how structured), ALL CAPS usage, colon teasers ("Here's why:"), ellipsis, and deliberate line breaks as pacing tools. For each quirk that appears, describe not just that it exists but the precise way it functions in the writing.
-
-## 4. The Banned List (Most Critical Section)
-This section forces replication accuracy by defining the negative space. List three categories:
-- BANNED WORDS & PHRASES: Words and exact phrases this author never uses. ALWAYS include these standard AI-generated filler phrases that must be banned unless they actually appear: "In conclusion", "It's important to note", "Delve into", "Leverage", "Utilize", "Game-changer", "Paradigm shift", "At the end of the day", "Unpack", "Explore", "Navigate", "It's worth noting", "Importantly", "Firstly/Secondly/Finally", "In summary", "To summarize", "Shed light on". Add any others genuinely absent from this corpus.
-- BANNED SENTENCE STRUCTURES: Constructions never seen in this writing (passive voice, hedging qualifiers, throat-clearing openers like "I think that...", academic citation style, etc.)
-- BANNED TONES: Tonal registers entirely absent from this voice (sarcastic, preachy, formal, overly enthusiastic, etc.)
-
----
-Start with a 2-sentence voice fingerprint.
-End with a "Quick Reference" block: the 6 most important rules as direct commands.
-Never copy tweet text verbatim.
 ---
 TWEETS:
 ${tweets}`;}
-async function callQuiet(key,model,prompt){let r='';await callStream(key,model,prompt,t=>{r+=t;},1200);return r;}
+
+async function callQuiet(key,model,prompt){let r='';await callStream(key,model,prompt,t=>{r+=t;},1400);return r;}
 async function callStream(key,model,prompt,onChunk,maxTok=2400){const fetchers={anthropic:fetchAnthropic,gemini:fetchGemini,deepseek:fetchDeepSeek};await fetchers[currentProvider](key,model,prompt,onChunk,maxTok);}
 async function fetchAnthropic(key,model,prompt,onChunk,maxTok){const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model,max_tokens:maxTok,stream:true,messages:[{role:'user',content:prompt}]})});if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`HTTP ${res.status}`);}await readSSE(res,evt=>{if(evt.type==='content_block_delta'&&evt.delta?.text)onChunk(evt.delta.text);});}
 async function fetchGemini(key,model,prompt,onChunk,maxTok){const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${key}&alt=sse`;const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTok}})});if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`HTTP ${res.status}`);}await readSSE(res,evt=>{const t=evt.candidates?.[0]?.content?.parts?.[0]?.text;if(t)onChunk(t);});}
@@ -339,7 +547,7 @@ async function generate(){
       document.getElementById('progress-bar').classList.add('active','streaming');
       setStatus(`<span style="color:var(--ink3);font-size:12px;font-style:italic;">Analyzing ${arr.length} tweets<span class="cursor"></span></span>`);
       const onC=t=>{rawMarkdown+=t;if(activeTab==='raw')document.getElementById('rulebook-raw').textContent=rawMarkdown+'▌';};
-      await callStream(key,model,bDirectPrompt(arr.join('\n\n---\n\n'),opts),onC,2400);
+      await callStream(key,model,bDirectPrompt(arr.join('\n\n---\n\n'),opts),onC,4000);
       document.getElementById('progress-bar').classList.remove('streaming');
     } else {
       const chunks=[];for(let i=0;i<arr.length;i+=CHUNK_SIZE)chunks.push(arr.slice(i,i+CHUNK_SIZE));
@@ -353,7 +561,7 @@ async function generate(){
       setPct(76);
       setStatus(`<div style="padding:4px 0;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:10px;">Pass 2 of 2 — Synthesis</div><div style="font-size:13px;color:var(--ink2);margin-bottom:14px;">Merging <strong>${chunks.length} pattern reports</strong> · <strong>${arr.length} tweets</strong><span class="cursor"></span></div><div class="batch-grid">${gridHTML(chunks.length,-1,chunks.length)}</div><div style="font-size:11px;color:var(--ink3);margin-top:10px;">Weighing patterns by cross-batch frequency…</div></div>`);
       const onC=t=>{rawMarkdown+=t;if(activeTab==='raw')document.getElementById('rulebook-raw').textContent=rawMarkdown+'▌';setPct(Math.min(98,76+rawMarkdown.length/100));};
-      await callStream(key,model,bSynthPrompt(reports,arr.length,opts),onC,2400);
+      await callStream(key,model,bSynthPrompt(reports,arr.length,opts),onC,4000);
       setPct(100);
     }
     renderOutput();
@@ -375,12 +583,63 @@ function renderOutput(){
   document.getElementById('rulebook-raw').style.display='none';document.getElementById('rulebook-rendered').style.display='block';
   const arr=parseTweetArray();const n=arr?arr.length:0;
   const rc=(rawMarkdown.match(/^[-*•]\s/gm)||[]).length+(rawMarkdown.match(/^\d+\.\s/gm)||[]).length;
-  const sc=(rawMarkdown.match(/^#{1,3}\s/gm)||[]).length;
+  const sc=(rawMarkdown.match(/^## /gm)||[]).length;
   let html='';
   if(n>0||rc>0)html+=`<div class="stats-row"><div class="stat"><div class="stat-value">${n}</div><div class="stat-label">Tweets analyzed</div></div><div class="stat"><div class="stat-value">${rc}</div><div class="stat-label">Rules extracted</div></div><div class="stat"><div class="stat-value">${sc}</div><div class="stat-label">Sections</div></div></div>`;
-  let inSec=false,bc=0;
-  for(const line of rawMarkdown.split('\n')){const t=line.trim();if(!t)continue;if(t.match(/^#{1,3}\s/)){if(inSec)html+='</div>';bc=0;html+=`<div class="rule-section"><div class="rule-section-title">${t.replace(/^#+\s/,'')}</div>`;inSec=true;}else if(t.match(/^[-*•]\s/)||t.match(/^\d+\.\s/)){bc++;html+=`<div class="rule-item"><div class="rule-bullet">${bc}</div><div class="rule-text">${fmt(t.replace(/^[-*•]\s/,'').replace(/^\d+\.\s/,''))}</div></div>`;}else{html+=`<p style="color:var(--ink2);margin-bottom:10px;line-height:1.7;">${fmt(t)}</p>`;}}
-  if(inSec)html+='</div>';document.getElementById('rulebook-rendered').innerHTML=html;
+  const lines=rawMarkdown.split('\n');
+  let html2='',inSection=false,inSubsection=false,bulletCount=0,inCode=false,codeBuf='';
+  for(let i=0;i<lines.length;i++){
+    const raw=lines[i];const t=raw.trim();
+    // code block toggle
+    if(t.startsWith('```')){
+      if(!inCode){inCode=true;codeBuf='';}
+      else{inCode=false;html2+=`<pre class="code-block">${codeBuf.trimEnd()}</pre>`;}
+      continue;
+    }
+    if(inCode){codeBuf+=raw+'\n';continue;}
+    if(!t){if(inSubsection){}; continue;}
+    // H1 — title
+    if(t.startsWith('# ')&&!t.startsWith('## ')){
+      const title=t.replace(/^# /,'');
+      html2+=`<div class="rb-title">${fmt(title)}</div>`;continue;
+    }
+    // HR
+    if(t==='---'){html2+=`<hr class="rb-hr">`;continue;}
+    // H2 — major section
+    if(t.startsWith('## ')){
+      if(inSubsection){html2+='</div>';inSubsection=false;}
+      if(inSection){html2+='</div>';inSection=false;}
+      bulletCount=0;
+      const title=t.replace(/^## /,'');
+      html2+=`<div class="rule-section"><div class="rule-section-title">${fmt(title)}</div>`;
+      inSection=true;continue;
+    }
+    // H3 — subsection
+    if(t.startsWith('### ')){
+      if(inSubsection){html2+='</div>';inSubsection=false;}
+      bulletCount=0;
+      const title=t.replace(/^### /,'');
+      html2+=`<div class="rb-subsection"><div class="rb-subsection-title">${fmt(title)}</div>`;
+      inSubsection=true;continue;
+    }
+    // numbered list
+    if(t.match(/^\d+\.\s/)){
+      bulletCount++;
+      const text=fmt(t.replace(/^\d+\.\s/,''));
+      html2+=`<div class="rule-item"><div class="rule-bullet">${bulletCount}</div><div class="rule-text">${text}</div></div>`;continue;
+    }
+    // bullet
+    if(t.match(/^[-*•]\s/)){
+      bulletCount++;
+      const text=fmt(t.replace(/^[-*•]\s/,''));
+      html2+=`<div class="rule-item"><div class="rule-bullet">${bulletCount}</div><div class="rule-text">${text}</div></div>`;continue;
+    }
+    // plain paragraph
+    html2+=`<p class="rb-para">${fmt(t)}</p>`;
+  }
+  if(inSubsection)html2+='</div>';
+  if(inSection)html2+='</div>';
+  document.getElementById('rulebook-rendered').innerHTML=html+html2;
 }
 function fmt(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>');}
 function copyOutput(){navigator.clipboard.writeText(rawMarkdown).then(()=>showToast('Copied to clipboard'));}
