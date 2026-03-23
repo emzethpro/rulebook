@@ -1,210 +1,925 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rulebook — Style Extractor</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300;1,9..144,500&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --ink:#1a1814;--ink2:#4a4640;--ink3:#8a857e;
-    --paper:#f5f2eb;--paper2:#edeae0;--paper3:#e3dfd3;
-    --accent:#c85a2a;--accent2:#e07a4a;--green:#2d6b4a;
-    --rule:rgba(26,24,20,0.12);--radius:6px;
-    --mono:'DM Mono',monospace;--serif:'Fraunces',Georgia,serif;
-  }
-  body{background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.7;min-height:100vh;}
-  header{border-bottom:1px solid var(--rule);padding:22px 40px;display:flex;align-items:baseline;gap:24px;}
-  .logo{font-family:var(--serif);font-size:26px;font-weight:700;letter-spacing:-0.5px;}
-  .logo em{font-style:italic;color:var(--accent);}
-  .tagline{font-size:11px;color:var(--ink3);letter-spacing:0.08em;text-transform:uppercase;}
-  .workspace{display:grid;grid-template-columns:420px 1fr;min-height:calc(100vh - 71px);}
-  .panel-left{border-right:1px solid var(--rule);display:flex;flex-direction:column;overflow-y:auto;}
-  .section{border-bottom:1px solid var(--rule);padding:18px 22px;}
-  .label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink3);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
-  .label::after{content:'';flex:1;height:1px;background:var(--rule);}
-  .provider-pills{display:flex;gap:6px;}
-  .provider-pill{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:var(--radius);border:1px solid var(--rule);background:var(--paper2);font-family:var(--mono);font-size:11px;color:var(--ink2);cursor:pointer;transition:all 0.15s;}
-  .provider-pill:hover{border-color:var(--ink3);}
-  .provider-pill.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
-  .pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-  input[type="password"],input[type="text"],textarea,select{width:100%;background:var(--paper2);border:1px solid var(--rule);border-radius:var(--radius);padding:8px 11px;font-family:var(--mono);font-size:12px;color:var(--ink);outline:none;transition:border-color 0.15s,background 0.15s;resize:none;}
-  input:focus,textarea:focus,select:focus{border-color:var(--accent);background:var(--paper);}
-  input::placeholder,textarea::placeholder{color:var(--ink3);}
-  .key-wrap{position:relative;}
-  .key-wrap input{padding-right:50px;}
-  .key-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink3);cursor:pointer;background:none;border:none;font-family:var(--mono);padding:2px 4px;transition:color 0.15s;}
-  .key-toggle:hover{color:var(--accent);}
-  .opt-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;}
-  .field-gap{margin-top:11px;}
-  .upload-zone{border:1px dashed var(--rule);border-radius:var(--radius);padding:16px;text-align:center;cursor:pointer;transition:border-color 0.15s,background 0.15s;background:var(--paper2);position:relative;}
-  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--paper);}
-  .upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-  .file-name{font-size:11px;color:var(--green);margin-top:6px;font-style:italic;}
-  .count-row{display:flex;align-items:center;gap:8px;margin-top:7px;min-height:18px;}
-  .count-badge{display:none;font-size:10px;padding:2px 8px;border-radius:10px;color:#fff;font-family:var(--mono);letter-spacing:0.04em;}
-  .pipe-badge{font-size:10px;color:var(--ink3);font-style:italic;}
-  .or-divider{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:10px;color:var(--ink3);letter-spacing:0.08em;text-transform:uppercase;}
-  .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--rule);}
-  textarea.tweet-paste{height:130px;font-size:11.5px;line-height:1.6;}
-  .options-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
-  .btn-row{display:flex;gap:8px;margin:18px 22px;}
-  .btn-generate{flex:1;background:var(--ink);color:var(--paper);border:none;border-radius:var(--radius);padding:13px 16px;font-family:var(--serif);font-size:15px;font-weight:700;font-style:italic;cursor:pointer;transition:background 0.15s,transform 0.1s;display:flex;align-items:center;justify-content:center;gap:10px;}
-  .btn-generate:hover{background:var(--accent);}
-  .btn-generate:active{transform:scale(0.99);}
-  .btn-generate:disabled{background:var(--ink3);cursor:not-allowed;transform:none;}
-  .btn-cancel{display:none;align-items:center;justify-content:center;padding:0 14px;background:transparent;color:var(--ink3);border:1px solid var(--rule);border-radius:var(--radius);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
-  .btn-cancel:hover{border-color:var(--accent);color:var(--accent);}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:none;}
-  .btn-generate.loading .spinner{display:block;}
-  .btn-generate.loading .btn-text{opacity:0.6;}
-  .panel-right{display:flex;flex-direction:column;}
-  .output-header{padding:16px 32px 12px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;}
-  .output-title{font-family:var(--serif);font-size:18px;font-weight:300;font-style:italic;color:var(--ink2);}
-  .output-actions{display:flex;gap:8px;}
-  .btn-small{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;padding:6px 12px;border-radius:var(--radius);border:1px solid var(--rule);background:transparent;color:var(--ink2);cursor:pointer;transition:all 0.15s;}
-  .btn-small:hover{border-color:var(--ink2);color:var(--ink);}
-  .btn-small.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);}
-  .btn-small.primary:hover{background:var(--accent);border-color:var(--accent);}
-  .btn-small:disabled{opacity:0.4;cursor:not-allowed;}
-  .tabs{display:flex;border-bottom:1px solid var(--rule);padding:0 32px;}
-  .tab{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink3);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:color 0.15s,border-color 0.15s;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--mono);}
-  .tab:hover{color:var(--ink);}
-  .tab.active{color:var(--ink);border-bottom-color:var(--accent);}
-  .progress-bar{height:3px;background:var(--rule);position:relative;overflow:hidden;display:none;}
-  .progress-bar.active{display:block;}
-  @keyframes indeterminate{from{transform:translateX(-100%)}to{transform:translateX(400%)}}
-  .progress-bar.streaming .progress-fill{width:40%!important;animation:indeterminate 1.2s ease-in-out infinite;}
-  .progress-fill{height:100%;background:var(--accent);width:0%;transition:width 0.4s ease;}
-  .output-body{flex:1;overflow-y:auto;padding:28px 32px;}
-  .empty-state{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);text-align:center;padding:40px;}
-  .empty-icon{font-family:var(--serif);font-size:48px;font-style:italic;font-weight:300;opacity:0.25;line-height:1;}
-  .empty-text{font-size:12px;max-width:260px;line-height:1.7;opacity:0.6;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .rulebook{max-width:680px;animation:fadeIn 0.4s ease;}
-  .rule-section{margin-bottom:30px;}
-  .rule-section-title{font-family:var(--serif);font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--accent);margin-bottom:13px;padding-bottom:8px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;}
-  .rule-section-title::before{content:'§';font-style:italic;font-weight:300;opacity:0.5;}
-  .rule-item{display:flex;gap:13px;margin-bottom:9px;align-items:flex-start;}
-  .rule-bullet{flex-shrink:0;width:18px;height:18px;border:1px solid var(--ink3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink3);margin-top:2px;font-weight:500;}
-  .rule-text{line-height:1.65;color:var(--ink2);}
-  .rule-text strong{color:var(--ink);font-weight:500;}
-  .rule-text em{font-style:italic;color:var(--accent);}
-  .rule-text code{background:var(--paper3);padding:1px 5px;border-radius:3px;font-size:11px;color:var(--ink);font-family:var(--mono);}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-  .cursor{display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:text-bottom;animation:blink 0.8s step-end infinite;}
-  .raw-output{font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--ink2);white-space:pre-wrap;background:var(--paper2);border:1px solid var(--rule);border-radius:var(--radius);padding:20px;}
-  .stats-row{display:flex;gap:24px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--rule);}
-  .stat{display:flex;flex-direction:column;gap:2px;}
-  .stat-value{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--ink);line-height:1;}
-  .stat-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink3);}
-  .error-box{background:#fdf0ee;border:1px solid #e8b4a8;border-radius:var(--radius);padding:16px;color:#8b3520;font-size:12px;line-height:1.6;}
-  .batch-grid{display:flex;flex-wrap:wrap;gap:4px;margin:14px 0;}
-  .batch-cell{width:15px;height:15px;border-radius:3px;background:var(--paper3);transition:background 0.3s;}
-  .batch-cell.done{background:var(--accent);}
-  .batch-cell.active{background:var(--accent2);}
-  .toast{position:fixed;bottom:22px;right:22px;background:var(--ink);color:var(--paper);font-size:12px;padding:10px 16px;border-radius:var(--radius);opacity:0;transform:translateY(8px);transition:all 0.2s;pointer-events:none;z-index:100;}
-  .toast.show{opacity:1;transform:none;}
-  ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--rule);border-radius:3px;}
-  @media(max-width:900px){.workspace{grid-template-columns:1fr;}.panel-left{border-right:none;border-bottom:1px solid var(--rule);}header{padding:16px 22px;}.output-body{padding:20px 22px;}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rulebook — Style Extractor</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300;1,9..144,500&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --ink: #1a1814;
+      --ink2: #4a4640;
+      --ink3: #8a857e;
+      --paper: #f5f2eb;
+      --paper2: #edeae0;
+      --paper3: #e3dfd3;
+      --accent: #c85a2a;
+      --accent2: #e07a4a;
+      --green: #2d6b4a;
+      --rule: rgba(26, 24, 20, 0.12);
+      --radius: 6px;
+      --mono: 'DM Mono', monospace;
+      --serif: 'Fraunces', Georgia, serif;
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--rule);
+      padding: 22px 40px;
+      display: flex;
+      align-items: baseline;
+      gap: 24px;
+    }
+
+    .logo {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .tagline {
+      font-size: 11px;
+      color: var(--ink3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      min-height: calc(100vh - 71px);
+    }
+
+    .panel-left {
+      border-right: 1px solid var(--rule);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .section {
+      border-bottom: 1px solid var(--rule);
+      padding: 18px 22px;
+    }
+
+    .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--ink3);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .provider-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .provider-pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid var(--rule);
+      background: var(--paper2);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink2);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .provider-pill:hover {
+      border-color: var(--ink3);
+    }
+
+    .provider-pill.active {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    input[type="password"],
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--paper2);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 8px 11px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      resize: none;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+      background: var(--paper);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--ink3);
+    }
+
+    .key-wrap {
+      position: relative;
+    }
+
+    .key-wrap input {
+      padding-right: 50px;
+    }
+
+    .key-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink3);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: var(--mono);
+      padding: 2px 4px;
+      transition: color 0.15s;
+    }
+
+    .key-toggle:hover {
+      color: var(--accent);
+    }
+
+    .opt-label {
+      font-size: 10px;
+      color: var(--ink3);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 5px;
+    }
+
+    .field-gap {
+      margin-top: 11px;
+    }
+
+    .upload-zone {
+      border: 1px dashed var(--rule);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: var(--paper2);
+      position: relative;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag {
+      border-color: var(--accent);
+      background: var(--paper);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .file-name {
+      font-size: 11px;
+      color: var(--green);
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    .count-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 7px;
+      min-height: 18px;
+    }
+
+    .count-badge {
+      display: none;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: #fff;
+      font-family: var(--mono);
+      letter-spacing: 0.04em;
+    }
+
+    .pipe-badge {
+      font-size: 10px;
+      color: var(--ink3);
+      font-style: italic;
+    }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+      font-size: 10px;
+      color: var(--ink3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    textarea.tweet-paste {
+      height: 130px;
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin: 18px 22px;
+    }
+
+    .btn-generate {
+      flex: 1;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      border-radius: var(--radius);
+      padding: 13px 16px;
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 700;
+      font-style: italic;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-generate:hover {
+      background: var(--accent);
+    }
+
+    .btn-generate:active {
+      transform: scale(0.99);
+    }
+
+    .btn-generate:disabled {
+      background: var(--ink3);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-cancel {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0 14px;
+      background: transparent;
+      color: var(--ink3);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-cancel:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .btn-generate.loading .spinner {
+      display: block;
+    }
+
+    .btn-generate.loading .btn-text {
+      opacity: 0.6;
+    }
+
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-header {
+      padding: 16px 32px 12px;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .output-title {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--ink2);
+    }
+
+    .output-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-small {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--rule);
+      background: transparent;
+      color: var(--ink2);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-small:hover {
+      border-color: var(--ink2);
+      color: var(--ink);
+    }
+
+    .btn-small.primary {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
+
+    .btn-small.primary:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .btn-small:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--rule);
+      padding: 0 32px;
+    }
+
+    .tab {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink3);
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: var(--mono);
+    }
+
+    .tab:hover {
+      color: var(--ink);
+    }
+
+    .tab.active {
+      color: var(--ink);
+      border-bottom-color: var(--accent);
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: var(--rule);
+      position: relative;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar.active {
+      display: block;
+    }
+
+    @keyframes indeterminate {
+      from {
+        transform: translateX(-100%)
+      }
+
+      to {
+        transform: translateX(400%)
+      }
+    }
+
+    .progress-bar.streaming .progress-fill {
+      width: 40% !important;
+      animation: indeterminate 1.2s ease-in-out infinite;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .output-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px;
+    }
+
+    .empty-state {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--ink3);
+      text-align: center;
+      padding: 40px;
+    }
+
+    .empty-icon {
+      font-family: var(--serif);
+      font-size: 48px;
+      font-style: italic;
+      font-weight: 300;
+      opacity: 0.25;
+      line-height: 1;
+    }
+
+    .empty-text {
+      font-size: 12px;
+      max-width: 260px;
+      line-height: 1.7;
+      opacity: 0.6;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .rulebook {
+      max-width: 680px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .rule-section {
+      margin-bottom: 30px;
+    }
+
+    .rule-section-title {
+      font-family: var(--serif);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 13px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rule-section-title::before {
+      content: '§';
+      font-style: italic;
+      font-weight: 300;
+      opacity: 0.5;
+    }
+
+    .rule-item {
+      display: flex;
+      gap: 13px;
+      margin-bottom: 9px;
+      align-items: flex-start;
+    }
+
+    .rule-bullet {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--ink3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: var(--ink3);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .rule-text {
+      line-height: 1.65;
+      color: var(--ink2);
+    }
+
+    .rule-text strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .rule-text em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .rule-text code {
+      background: var(--paper3);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11px;
+      color: var(--ink);
+      font-family: var(--mono);
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0
+      }
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 14px;
+      background: var(--accent);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 0.8s step-end infinite;
+    }
+
+    .raw-output {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--ink2);
+      white-space: pre-wrap;
+      background: var(--paper2);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-value {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink3);
+    }
+
+    .error-box {
+      background: #fdf0ee;
+      border: 1px solid #e8b4a8;
+      border-radius: var(--radius);
+      padding: 16px;
+      color: #8b3520;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .batch-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin: 14px 0;
+    }
+
+    .batch-cell {
+      width: 15px;
+      height: 15px;
+      border-radius: 3px;
+      background: var(--paper3);
+      transition: background 0.3s;
+    }
+
+    .batch-cell.done {
+      background: var(--accent);
+    }
+
+    .batch-cell.active {
+      background: var(--accent2);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 12px;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.2s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: none;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--rule);
+      border-radius: 3px;
+    }
+
+    @media(max-width:900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-left {
+        border-right: none;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      header {
+        padding: 16px 22px;
+      }
+
+      .output-body {
+        padding: 20px 22px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<header>
-  <div class="logo">Rule<em>book</em></div>
-  <div class="tagline">Tweet compilation → writing style rulebook</div>
-</header>
-<div class="workspace">
-  <div class="panel-left">
-    <div class="section">
-      <div class="label">Provider</div>
-      <div class="provider-pills">
-        <button class="provider-pill active" onclick="setProvider('anthropic',this)"><span class="pill-dot" style="background:#c85a2a;"></span>Anthropic</button>
-        <button class="provider-pill" onclick="setProvider('gemini',this)"><span class="pill-dot" style="background:#4285f4;"></span>Gemini</button>
-        <button class="provider-pill" onclick="setProvider('deepseek',this)"><span class="pill-dot" style="background:#2d8a8a;"></span>DeepSeek</button>
+  <header>
+    <div class="logo">Rule<em>book</em></div>
+    <div class="tagline">Tweet compilation → writing style rulebook</div>
+  </header>
+  <div class="workspace">
+    <div class="panel-left">
+      <div class="section">
+        <div class="label">Provider</div>
+        <div class="provider-pills">
+          <button class="provider-pill active" onclick="setProvider('anthropic',this)"><span class="pill-dot"
+              style="background:#c85a2a;"></span>Anthropic</button>
+          <button class="provider-pill" onclick="setProvider('gemini',this)"><span class="pill-dot"
+              style="background:#4285f4;"></span>Gemini</button>
+          <button class="provider-pill" onclick="setProvider('deepseek',this)"><span class="pill-dot"
+              style="background:#2d8a8a;"></span>DeepSeek</button>
+          <button class="provider-pill" onclick="setProvider('kimi',this)"><span class="pill-dot"
+              style="background:#000000;"></span>Kimi</button>
+          <button class="provider-pill" onclick="setProvider('openrouter',this)"><span class="pill-dot"
+              style="background:#8b5cf6;"></span>OpenRouter</button>
+        </div>
+        <div class="field-gap">
+          <div class="opt-label">Model</div><select id="model-select"></select>
+        </div>
+        <div class="field-gap">
+          <div class="opt-label">API Key</div>
+          <div class="key-wrap"><input type="password" id="api-key" autocomplete="off"><button class="key-toggle"
+              onclick="toggleKey()">Show</button></div>
+          <div id="key-hint" style="font-size:10px;color:var(--ink3);margin-top:5px;"></div>
+        </div>
       </div>
-      <div class="field-gap"><div class="opt-label">Model</div><select id="model-select"></select></div>
-      <div class="field-gap">
-        <div class="opt-label">API Key</div>
-        <div class="key-wrap"><input type="password" id="api-key" autocomplete="off"><button class="key-toggle" onclick="toggleKey()">Show</button></div>
-        <div id="key-hint" style="font-size:10px;color:var(--ink3);margin-top:5px;"></div>
+      <div class="section">
+        <div class="label">Tweet compilation</div>
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="file-input" accept=".json,.txt,.csv" onchange="handleFile(this)">
+          <div style="font-size:18px;margin-bottom:4px;">↑</div>
+          <div style="font-size:12px;color:var(--ink2);">Drop file or click to upload</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">.json · .txt · .csv</div>
+        </div>
+        <div class="count-row">
+          <div class="file-name" id="file-name" style="display:none;"></div>
+          <span class="count-badge" id="cb1"></span>
+          <span class="pipe-badge" id="pb1"></span>
+        </div>
+        <div class="or-divider">or paste</div>
+        <textarea class="tweet-paste" id="tweet-paste"
+          placeholder="Paste tweets here, one per line or as JSON…"></textarea>
+        <div class="count-row"><span class="count-badge" id="cb2"></span><span class="pipe-badge" id="pb2"></span></div>
+      </div>
+      <div class="section">
+        <div class="label">Options</div>
+        <div class="options-grid">
+          <div>
+            <div class="opt-label">Depth</div><select id="opt-depth">
+              <option value="brief">Brief</option>
+              <option value="standard">Standard</option>
+              <option value="deep" selected>Deep</option>
+            </select>
+          </div>
+          <div>
+            <div class="opt-label">Format</div><select id="opt-format">
+              <option value="structured" selected>Structured</option>
+              <option value="prose">Prose</option>
+              <option value="checklist">Checklist</option>
+            </select>
+          </div>
+          <div>
+            <div class="opt-label">Banned list</div><select id="opt-focus">
+              <option value="all" selected>Full (recommended)</option>
+              <option value="extended">Extended + AI phrases</option>
+              <option value="minimal">Minimal</option>
+            </select>
+          </div>
+          <div>
+            <div class="opt-label">Output</div><select id="opt-output">
+              <option value="prompt-ready" selected>Prompt-ready</option>
+              <option value="editorial">Editorial</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-generate" id="generate-btn" onclick="generate()">
+          <div class="spinner"></div><span class="btn-text">Extract Rulebook</span>
+        </button>
+        <button class="btn-cancel" id="cancel-btn" onclick="cancelGeneration()">Cancel</button>
       </div>
     </div>
-    <div class="section">
-      <div class="label">Tweet compilation</div>
-      <div class="upload-zone" id="upload-zone">
-        <input type="file" id="file-input" accept=".json,.txt,.csv" onchange="handleFile(this)">
-        <div style="font-size:18px;margin-bottom:4px;">↑</div>
-        <div style="font-size:12px;color:var(--ink2);">Drop file or click to upload</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">.json · .txt · .csv</div>
+    <div class="panel-right">
+      <div class="output-header">
+        <div class="output-title">Style Rulebook</div>
+        <div class="output-actions">
+          <button class="btn-small" id="btn-copy" onclick="copyOutput()" disabled>Copy</button>
+          <button class="btn-small primary" id="btn-download" onclick="downloadOutput()" disabled>Download .md</button>
+        </div>
       </div>
-      <div class="count-row">
-        <div class="file-name" id="file-name" style="display:none;"></div>
-        <span class="count-badge" id="cb1"></span>
-        <span class="pipe-badge" id="pb1"></span>
+      <div class="progress-bar" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
       </div>
-      <div class="or-divider">or paste</div>
-      <textarea class="tweet-paste" id="tweet-paste" placeholder="Paste tweets here, one per line or as JSON…"></textarea>
-      <div class="count-row"><span class="count-badge" id="cb2"></span><span class="pipe-badge" id="pb2"></span></div>
-    </div>
-    <div class="section">
-      <div class="label">Options</div>
-      <div class="options-grid">
-        <div><div class="opt-label">Depth</div><select id="opt-depth"><option value="brief">Brief</option><option value="standard">Standard</option><option value="deep" selected>Deep</option></select></div>
-        <div><div class="opt-label">Format</div><select id="opt-format"><option value="structured" selected>Structured</option><option value="prose">Prose</option><option value="checklist">Checklist</option></select></div>
-        <div><div class="opt-label">Banned list</div><select id="opt-focus"><option value="all" selected>Full (recommended)</option><option value="extended">Extended + AI phrases</option><option value="minimal">Minimal</option></select></div>
-        <div><div class="opt-label">Output</div><select id="opt-output"><option value="prompt-ready" selected>Prompt-ready</option><option value="editorial">Editorial</option></select></div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('rendered',this)">Rendered</button>
+        <button class="tab" onclick="switchTab('raw',this)">Raw</button>
       </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn-generate" id="generate-btn" onclick="generate()"><div class="spinner"></div><span class="btn-text">Extract Rulebook</span></button>
-      <button class="btn-cancel" id="cancel-btn" onclick="cancelGeneration()">Cancel</button>
+      <div class="output-body" id="output-body">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">§</div>
+          <div class="empty-text">Upload a tweet compilation and hit Extract Rulebook.<br><br>Up to 1000+ tweets
+            supported via two-pass chunked analysis.</div>
+        </div>
+        <div class="rulebook" id="rulebook-rendered" style="display:none;"></div>
+        <pre class="raw-output" id="rulebook-raw" style="display:none;"></pre>
+      </div>
     </div>
   </div>
-  <div class="panel-right">
-    <div class="output-header">
-      <div class="output-title">Style Rulebook</div>
-      <div class="output-actions">
-        <button class="btn-small" id="btn-copy" onclick="copyOutput()" disabled>Copy</button>
-        <button class="btn-small primary" id="btn-download" onclick="downloadOutput()" disabled>Download .md</button>
-      </div>
-    </div>
-    <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('rendered',this)">Rendered</button>
-      <button class="tab" onclick="switchTab('raw',this)">Raw</button>
-    </div>
-    <div class="output-body" id="output-body">
-      <div class="empty-state" id="empty-state">
-        <div class="empty-icon">§</div>
-        <div class="empty-text">Upload a tweet compilation and hit Extract Rulebook.<br><br>Up to 1000+ tweets supported via two-pass chunked analysis.</div>
-      </div>
-      <div class="rulebook" id="rulebook-rendered" style="display:none;"></div>
-      <pre class="raw-output" id="rulebook-raw" style="display:none;"></pre>
-    </div>
-  </div>
-</div>
-<div class="toast" id="toast"></div>
-<script>
-const PROVIDERS={anthropic:{hint:'Key stays in your browser. Never stored or forwarded.',placeholder:'sk-ant-api03-…',models:[{id:'claude-sonnet-4-20250514',label:'Claude Sonnet 4 (recommended)'},{id:'claude-opus-4-20250514',label:'Claude Opus 4'},{id:'claude-haiku-4-5-20251001',label:'Claude Haiku 4.5 (fast)'}]},gemini:{hint:'Get your key at aistudio.google.com/apikey',placeholder:'AIza…',models:[{id:'gemini-2.0-flash',label:'Gemini 2.0 Flash (recommended)'},{id:'gemini-2.0-flash-lite',label:'Gemini 2.0 Flash Lite (fast)'},{id:'gemini-1.5-pro',label:'Gemini 1.5 Pro'}]},deepseek:{hint:'Get your key at platform.deepseek.com',placeholder:'sk-…',models:[{id:'deepseek-chat',label:'DeepSeek V3 (recommended)'},{id:'deepseek-reasoner',label:'DeepSeek R1 (reasoning)'}]}};
-const CHUNK_SIZE=80,DIRECT_THRESHOLD=60;
-let currentProvider='anthropic',rawMarkdown='',activeTab='rendered',fileContent='',abortRequested=false;
-setProvider('anthropic',document.querySelector('.provider-pill'));
-function setProvider(name,btn){currentProvider=name;document.querySelectorAll('.provider-pill').forEach(p=>p.classList.remove('active'));btn.classList.add('active');const cfg=PROVIDERS[name];document.getElementById('api-key').placeholder=cfg.placeholder;document.getElementById('key-hint').textContent=cfg.hint;document.getElementById('model-select').innerHTML=cfg.models.map(m=>`<option value="${m.id}">${m.label}</option>`).join('');}
-function handleFile(input){const file=input.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{fileContent=e.target.result;document.getElementById('file-name').textContent='✓ '+file.name;document.getElementById('file-name').style.display='block';document.getElementById('tweet-paste').value='';updateCount();};r.readAsText(file);}
-const zone=document.getElementById('upload-zone');
-zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
-zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
-zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');const f=e.dataTransfer.files[0];if(!f)return;const inp=document.getElementById('file-input');const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;handleFile(inp);});
-document.getElementById('tweet-paste').addEventListener('input',updateCount);
-function updateCount(){const arr=parseTweetArray();const n=arr?arr.length:0;const chunked=n>DIRECT_THRESHOLD;const batches=chunked?Math.ceil(n/CHUNK_SIZE):0;['cb1','cb2'].forEach(id=>{const el=document.getElementById(id);el.style.display=n>0?'inline-flex':'none';el.textContent=n+' tweets';el.style.background=chunked?'var(--accent)':'var(--ink3)';});['pb1','pb2'].forEach(id=>{document.getElementById(id).textContent=n===0?'':chunked?`→ chunked (${batches} batches + synthesis)`:'→ single-pass';});}
-function toggleKey(){const inp=document.getElementById('api-key');const btn=document.querySelector('.key-toggle');inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'Show':'Hide';}
-function switchTab(tab,el){activeTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');if(rawMarkdown)renderOutput();}
-function parseTweetArray(){const src=fileContent||document.getElementById('tweet-paste').value.trim();if(!src)return null;try{const json=JSON.parse(src);if(json.examples)return json.examples.map(e=>e.text).filter(Boolean);if(Array.isArray(json)){if(typeof json[0]==='string')return json.filter(Boolean);if(json[0]?.text)return json.map(e=>e.text).filter(Boolean);}}catch{}return src.split(/\n{2,}|^---$/m).map(t=>t.trim()).filter(t=>t.length>5);}
-function getInputText(){const arr=parseTweetArray();return arr?arr.join('\n\n---\n\n'):null;}
-function bChunkPrompt(tweets,i,total){return `Analyze the writing style in this tweet batch (${i+1}/${total}). Output ONLY a compact report. One line per field. Be specific — give real examples and measurements, not abstractions.
+  <div class="toast" id="toast"></div>
+  <script>
+    const PROVIDERS = { anthropic: { hint: 'Key stays in your browser. Never stored or forwarded.', placeholder: 'sk-ant-api03-…', models: [{ id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (recommended)' }, { id: 'claude-opus-4-20250514', label: 'Claude Opus 4' }, { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (fast)' }] }, gemini: { hint: 'Get your key at aistudio.google.com/apikey', placeholder: 'AIza…', models: [{ id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (recommended)' }, { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite (fast)' }, { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }] }, deepseek: { hint: 'Get your key at platform.deepseek.com', placeholder: 'sk-…', models: [{ id: 'deepseek-chat', label: 'DeepSeek V3 (recommended)' }, { id: 'deepseek-reasoner', label: 'DeepSeek R1 (reasoning)' }] }, kimi: { hint: 'Get your key at platform.moonshot.cn', placeholder: 'sk-…', models: [{ id: 'moonshot-v1-auto', label: 'Moonshot V1 (Auto)' }, { id: 'moonshot-v1-128k', label: 'Moonshot V1 (128k)' }] }, openrouter: { hint: 'Get your key at openrouter.ai/keys', placeholder: 'sk-or-v1-…', models: [{ id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (via OR)' }, { id: 'openai/o3-mini', label: 'o3-mini (via OR)' }, { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro (via OR)' }, { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (via OR)' }] } };
+    const CHUNK_SIZE = 80, DIRECT_THRESHOLD = 60;
+    let currentProvider = 'anthropic', rawMarkdown = '', activeTab = 'rendered', fileContent = '', abortRequested = false;
+    setProvider('anthropic', document.querySelector('.provider-pill'));
+    function setProvider(name, btn) { currentProvider = name; document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active')); btn.classList.add('active'); const cfg = PROVIDERS[name]; document.getElementById('api-key').placeholder = cfg.placeholder; document.getElementById('key-hint').textContent = cfg.hint; document.getElementById('model-select').innerHTML = cfg.models.map(m => `<option value="${m.id}">${m.label}</option>`).join(''); }
+    function handleFile(input) { const file = input.files[0]; if (!file) return; const r = new FileReader(); r.onload = e => { fileContent = e.target.result; document.getElementById('file-name').textContent = '✓ ' + file.name; document.getElementById('file-name').style.display = 'block'; document.getElementById('tweet-paste').value = ''; updateCount(); }; r.readAsText(file); }
+    const zone = document.getElementById('upload-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (!f) return; const inp = document.getElementById('file-input'); const dt = new DataTransfer(); dt.items.add(f); inp.files = dt.files; handleFile(inp); });
+    document.getElementById('tweet-paste').addEventListener('input', updateCount);
+    function updateCount() { const arr = parseTweetArray(); const n = arr ? arr.length : 0; const chunked = n > DIRECT_THRESHOLD; const batches = chunked ? Math.ceil(n / CHUNK_SIZE) : 0;['cb1', 'cb2'].forEach(id => { const el = document.getElementById(id); el.style.display = n > 0 ? 'inline-flex' : 'none'; el.textContent = n + ' tweets'; el.style.background = chunked ? 'var(--accent)' : 'var(--ink3)'; });['pb1', 'pb2'].forEach(id => { document.getElementById(id).textContent = n === 0 ? '' : chunked ? `→ chunked (${batches} batches + synthesis)` : '→ single-pass'; }); }
+    function toggleKey() { const inp = document.getElementById('api-key'); const btn = document.querySelector('.key-toggle'); inp.type = inp.type === 'password' ? 'text' : 'password'; btn.textContent = inp.type === 'password' ? 'Show' : 'Hide'; }
+    function switchTab(tab, el) { activeTab = tab; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); if (rawMarkdown) renderOutput(); }
+    function parseTweetArray() { const src = fileContent || document.getElementById('tweet-paste').value.trim(); if (!src) return null; try { const json = JSON.parse(src); if (json.examples) return json.examples.map(e => e.text).filter(Boolean); if (Array.isArray(json)) { if (typeof json[0] === 'string') return json.filter(Boolean); if (json[0]?.text) return json.map(e => e.text).filter(Boolean); } } catch { } return src.split(/\n{2,}|^---$/m).map(t => t.trim()).filter(t => t.length > 5); }
+    function getInputText() { const arr = parseTweetArray(); return arr ? arr.join('\n\n---\n\n') : null; }
+    function bChunkPrompt(tweets, i, total) {
+      return `Analyze the writing style in this tweet batch (${i + 1}/${total}). Output ONLY a compact report. One line per field. Be specific — give real examples and measurements, not abstractions.
 
 STRUCT_LENGTH: [avg words per sentence, e.g. "~9 words". Short <10 / medium 10-20 / long 20+]
 STRUCT_TYPE: [short+punchy / long+flowing / mixed — if mixed, describe the exact pattern, e.g. "3 short then 1 long kicker"]
@@ -260,9 +975,10 @@ BANNED_STRUCTURES: [sentence structures that never appear — e.g. "no passive v
 BANNED_TONE: [tonal registers completely absent from this voice]
 
 ---
-${tweets}`;}
+${tweets}`;
+    }
 
-const STRUCTURE_TEMPLATE = `
+    const STRUCTURE_TEMPLATE = `
 OUTPUT STRUCTURE — follow this skeleton exactly. Replace every [bracketed placeholder] with content derived from the source. Do not add or remove sections.
 
 # Voice Rulebook
@@ -482,13 +1198,13 @@ RULES FOR FILLING IN THE TEMPLATE:
 - The How to Apply steps must be tailored to this specific voice, not generic.
 `;
 
-function bSynthPrompt(reports,total,opts){
-const{depth,output}=opts;
-const dI={brief:'3-4 concrete rules per sub-section.',standard:'5-6 rules per sub-section with inline examples where useful.',deep:'7-10 rules per sub-section — exhaustive, with edge cases, specific word lists, and counterexamples.'}[depth];
-const oI=output==='prompt-ready'
-  ?'This rulebook will be pasted directly into an AI system prompt as a style constraint. Write every rule as a hard, unambiguous command: "Do X", "Never Y", "Always Z". Rules must be specific enough that an AI applies them mechanically — no interpretation required.'
-  :'Write as an editorial style guide a human writer would reference and consult. Explain the reasoning behind rules where it helps understanding.';
-return `You are synthesizing ${reports.length} style analysis reports covering ${total} tweets by the same author. Your goal is one authoritative Voice Rulebook that captures everything needed to replicate this writing style exactly.
+    function bSynthPrompt(reports, total, opts) {
+      const { depth, output } = opts;
+      const dI = { brief: '3-4 concrete rules per sub-section.', standard: '5-6 rules per sub-section with inline examples where useful.', deep: '7-10 rules per sub-section — exhaustive, with edge cases, specific word lists, and counterexamples.' }[depth];
+      const oI = output === 'prompt-ready'
+        ? 'This rulebook will be pasted directly into an AI system prompt as a style constraint. Write every rule as a hard, unambiguous command: "Do X", "Never Y", "Always Z". Rules must be specific enough that an AI applies them mechanically — no interpretation required.'
+        : 'Write as an editorial style guide a human writer would reference and consult. Explain the reasoning behind rules where it helps understanding.';
+      return `You are synthesizing ${reports.length} style analysis reports covering ${total} tweets by the same author. Your goal is one authoritative Voice Rulebook that captures everything needed to replicate this writing style exactly.
 
 ${oI}
 Density: ${dI}
@@ -499,15 +1215,16 @@ ${STRUCTURE_TEMPLATE}
 ---
 PATTERN REPORTS (${reports.length} batches × ~${CHUNK_SIZE} tweets each):
 
-${reports.map((r,i)=>`=== BATCH ${i+1} ===\n${r}`).join('\n\n')}`;}
+${reports.map((r, i) => `=== BATCH ${i + 1} ===\n${r}`).join('\n\n')}`;
+    }
 
-function bDirectPrompt(tweets,opts){
-const{depth,output}=opts;
-const dI={brief:'3-4 concrete rules per sub-section.',standard:'5-6 rules per sub-section with inline examples where useful.',deep:'7-10 rules per sub-section — exhaustive, with edge cases and specific word lists.'}[depth];
-const oI=output==='prompt-ready'
-  ?'This rulebook will be pasted directly into an AI system prompt as a style constraint. Write every rule as a hard, unambiguous command: "Do X", "Never Y", "Always Z". Rules must be specific enough that an AI applies them mechanically — no interpretation required.'
-  :'Write as an editorial style guide a human writer would reference and consult. Explain the reasoning behind rules where it helps understanding.';
-return `You are a writing style analyst. Your goal is one authoritative Voice Rulebook that captures everything needed to replicate this writing style exactly.
+    function bDirectPrompt(tweets, opts) {
+      const { depth, output } = opts;
+      const dI = { brief: '3-4 concrete rules per sub-section.', standard: '5-6 rules per sub-section with inline examples where useful.', deep: '7-10 rules per sub-section — exhaustive, with edge cases and specific word lists.' }[depth];
+      const oI = output === 'prompt-ready'
+        ? 'This rulebook will be pasted directly into an AI system prompt as a style constraint. Write every rule as a hard, unambiguous command: "Do X", "Never Y", "Always Z". Rules must be specific enough that an AI applies them mechanically — no interpretation required.'
+        : 'Write as an editorial style guide a human writer would reference and consult. Explain the reasoning behind rules where it helps understanding.';
+      return `You are a writing style analyst. Your goal is one authoritative Voice Rulebook that captures everything needed to replicate this writing style exactly.
 
 ${oI}
 Density: ${dI}
@@ -516,136 +1233,140 @@ ${STRUCTURE_TEMPLATE}
 
 ---
 TWEETS:
-${tweets}`;}
+${tweets}`;
+    }
 
-async function callQuiet(key,model,prompt){let r='';await callStream(key,model,prompt,t=>{r+=t;},1400);return r;}
-async function callStream(key,model,prompt,onChunk,maxTok=2400){const fetchers={anthropic:fetchAnthropic,gemini:fetchGemini,deepseek:fetchDeepSeek};await fetchers[currentProvider](key,model,prompt,onChunk,maxTok);}
-async function fetchAnthropic(key,model,prompt,onChunk,maxTok){const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model,max_tokens:maxTok,stream:true,messages:[{role:'user',content:prompt}]})});if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`HTTP ${res.status}`);}await readSSE(res,evt=>{if(evt.type==='content_block_delta'&&evt.delta?.text)onChunk(evt.delta.text);});}
-async function fetchGemini(key,model,prompt,onChunk,maxTok){const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${key}&alt=sse`;const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTok}})});if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`HTTP ${res.status}`);}await readSSE(res,evt=>{const t=evt.candidates?.[0]?.content?.parts?.[0]?.text;if(t)onChunk(t);});}
-async function fetchDeepSeek(key,model,prompt,onChunk,maxTok){const res=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},body:JSON.stringify({model,max_tokens:maxTok,stream:true,messages:[{role:'user',content:prompt}]})});if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`HTTP ${res.status}`);}await readSSE(res,evt=>{const t=evt.choices?.[0]?.delta?.content;if(t)onChunk(t);});}
-async function readSSE(res,handler){const reader=res.body.getReader();const dec=new TextDecoder();let buf='';while(true){const{done,value}=await reader.read();if(done)break;if(abortRequested){reader.cancel();throw new Error('Cancelled');}buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop();for(const line of lines){if(!line.startsWith('data: '))continue;const data=line.slice(6).trim();if(!data||data==='[DONE]')continue;try{handler(JSON.parse(data));}catch{}}}}
-function setStatus(html){const el=document.getElementById('rulebook-rendered');el.innerHTML=html;el.style.display='block';document.getElementById('rulebook-raw').style.display='none';}
-function setPct(p){const pb=document.getElementById('progress-bar');pb.classList.remove('streaming');pb.classList.add('active');document.getElementById('progress-fill').style.width=p+'%';}
-function gridHTML(done,active,total){return Array.from({length:total},(_,i)=>`<div class="batch-cell ${i<done?'done':i===active?'active':''}"></div>`).join('');}
-async function generate(){
-  const key=document.getElementById('api-key').value.trim();
-  if(!key){showToast('Enter your API key');return;}
-  const arr=parseTweetArray();
-  if(!arr||arr.length===0){showToast('Provide tweets via file upload or paste');return;}
-  abortRequested=false;
-  const model=document.getElementById('model-select').value;
-  const opts={depth:document.getElementById('opt-depth').value,format:document.getElementById('opt-format').value,focus:document.getElementById('opt-focus').value,output:document.getElementById('opt-output').value};
-  const btn=document.getElementById('generate-btn');
-  const cBtn=document.getElementById('cancel-btn');
-  btn.classList.add('loading');btn.disabled=true;cBtn.style.display='inline-flex';
-  document.getElementById('empty-state').style.display='none';
-  document.getElementById('rulebook-rendered').style.display='block';
-  document.getElementById('rulebook-raw').style.display='none';
-  rawMarkdown='';
-  try{
-    if(arr.length<=DIRECT_THRESHOLD){
-      document.getElementById('progress-bar').classList.add('active','streaming');
-      setStatus(`<span style="color:var(--ink3);font-size:12px;font-style:italic;">Analyzing ${arr.length} tweets<span class="cursor"></span></span>`);
-      const onC=t=>{rawMarkdown+=t;if(activeTab==='raw')document.getElementById('rulebook-raw').textContent=rawMarkdown+'▌';};
-      await callStream(key,model,bDirectPrompt(arr.join('\n\n---\n\n'),opts),onC,4000);
-      document.getElementById('progress-bar').classList.remove('streaming');
-    } else {
-      const chunks=[];for(let i=0;i<arr.length;i+=CHUNK_SIZE)chunks.push(arr.slice(i,i+CHUNK_SIZE));
-      const reports=[];
-      for(let i=0;i<chunks.length;i++){
-        if(abortRequested)throw new Error('Cancelled');
-        setPct(Math.round((i/chunks.length)*72));
-        setStatus(`<div style="padding:4px 0;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink3);margin-bottom:10px;">Pass 1 of 2 — Pattern extraction</div><div style="font-size:13px;color:var(--ink2);margin-bottom:14px;">Batch <strong>${i+1}</strong> of <strong>${chunks.length}</strong> <span style="color:var(--ink3);font-size:11px;">· ${chunks[i].length} tweets · ${arr.length} total</span></div><div class="batch-grid">${gridHTML(i,i,chunks.length)}</div><div style="font-size:11px;color:var(--ink3);margin-top:10px;">Extracting style patterns from each batch…</div></div>`);
-        reports.push(await callQuiet(key,model,bChunkPrompt(chunks[i].join('\n\n---\n\n'),i,chunks.length)));
+    async function callQuiet(key, model, prompt) { let r = ''; await callStream(key, model, prompt, t => { r += t; }, 1400); return r; }
+    async function callStream(key, model, prompt, onChunk, maxTok = 2400) { const fetchers = { anthropic: fetchAnthropic, gemini: fetchGemini, deepseek: fetchDeepSeek, kimi: fetchKimi, openrouter: fetchOpenRouter }; await fetchers[currentProvider](key, model, prompt, onChunk, maxTok); }
+    async function fetchAnthropic(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { if (evt.type === 'content_block_delta' && evt.delta?.text) onChunk(evt.delta.text); }); }
+    async function fetchGemini(key, model, prompt, onChunk, maxTok) { const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${key}&alt=sse`; const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTok } }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.candidates?.[0]?.content?.parts?.[0]?.text; if (t) onChunk(t); }); }
+    async function fetchDeepSeek(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.deepseek.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
+    async function fetchKimi(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.moonshot.cn/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
+    async function fetchOpenRouter(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}`, 'HTTP-Referer': window.location.href, 'X-Title': 'Rulebook Generator' }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
+    async function readSSE(res, handler) { const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = ''; while (true) { const { done, value } = await reader.read(); if (done) break; if (abortRequested) { reader.cancel(); throw new Error('Cancelled'); } buf += dec.decode(value, { stream: true }); const lines = buf.split('\n'); buf = lines.pop(); for (const line of lines) { if (!line.startsWith('data: ')) continue; const data = line.slice(6).trim(); if (!data || data === '[DONE]') continue; try { handler(JSON.parse(data)); } catch { } } } }
+    function setStatus(html) { const el = document.getElementById('rulebook-rendered'); el.innerHTML = html; el.style.display = 'block'; document.getElementById('rulebook-raw').style.display = 'none'; }
+    function setPct(p) { const pb = document.getElementById('progress-bar'); pb.classList.remove('streaming'); pb.classList.add('active'); document.getElementById('progress-fill').style.width = p + '%'; }
+    function gridHTML(done, active, total) { return Array.from({ length: total }, (_, i) => `<div class="batch-cell ${i < done ? 'done' : i === active ? 'active' : ''}"></div>`).join(''); }
+    async function generate() {
+      const key = document.getElementById('api-key').value.trim();
+      if (!key) { showToast('Enter your API key'); return; }
+      const arr = parseTweetArray();
+      if (!arr || arr.length === 0) { showToast('Provide tweets via file upload or paste'); return; }
+      abortRequested = false;
+      const model = document.getElementById('model-select').value;
+      const opts = { depth: document.getElementById('opt-depth').value, format: document.getElementById('opt-format').value, focus: document.getElementById('opt-focus').value, output: document.getElementById('opt-output').value };
+      const btn = document.getElementById('generate-btn');
+      const cBtn = document.getElementById('cancel-btn');
+      btn.classList.add('loading'); btn.disabled = true; cBtn.style.display = 'inline-flex';
+      document.getElementById('empty-state').style.display = 'none';
+      document.getElementById('rulebook-rendered').style.display = 'block';
+      document.getElementById('rulebook-raw').style.display = 'none';
+      rawMarkdown = '';
+      try {
+        if (arr.length <= DIRECT_THRESHOLD) {
+          document.getElementById('progress-bar').classList.add('active', 'streaming');
+          setStatus(`<span style="color:var(--ink3);font-size:12px;font-style:italic;">Analyzing ${arr.length} tweets<span class="cursor"></span></span>`);
+          const onC = t => { rawMarkdown += t; if (activeTab === 'raw') document.getElementById('rulebook-raw').textContent = rawMarkdown + '▌'; };
+          await callStream(key, model, bDirectPrompt(arr.join('\n\n---\n\n'), opts), onC, 4000);
+          document.getElementById('progress-bar').classList.remove('streaming');
+        } else {
+          const chunks = []; for (let i = 0; i < arr.length; i += CHUNK_SIZE)chunks.push(arr.slice(i, i + CHUNK_SIZE));
+          const reports = [];
+          for (let i = 0; i < chunks.length; i++) {
+            if (abortRequested) throw new Error('Cancelled');
+            setPct(Math.round((i / chunks.length) * 72));
+            setStatus(`<div style="padding:4px 0;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink3);margin-bottom:10px;">Pass 1 of 2 — Pattern extraction</div><div style="font-size:13px;color:var(--ink2);margin-bottom:14px;">Batch <strong>${i + 1}</strong> of <strong>${chunks.length}</strong> <span style="color:var(--ink3);font-size:11px;">· ${chunks[i].length} tweets · ${arr.length} total</span></div><div class="batch-grid">${gridHTML(i, i, chunks.length)}</div><div style="font-size:11px;color:var(--ink3);margin-top:10px;">Extracting style patterns from each batch…</div></div>`);
+            reports.push(await callQuiet(key, model, bChunkPrompt(chunks[i].join('\n\n---\n\n'), i, chunks.length)));
+          }
+          setPct(76);
+          setStatus(`<div style="padding:4px 0;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:10px;">Pass 2 of 2 — Synthesis</div><div style="font-size:13px;color:var(--ink2);margin-bottom:14px;">Merging <strong>${chunks.length} pattern reports</strong> · <strong>${arr.length} tweets</strong><span class="cursor"></span></div><div class="batch-grid">${gridHTML(chunks.length, -1, chunks.length)}</div><div style="font-size:11px;color:var(--ink3);margin-top:10px;">Weighing patterns by cross-batch frequency…</div></div>`);
+          const onC = t => { rawMarkdown += t; if (activeTab === 'raw') document.getElementById('rulebook-raw').textContent = rawMarkdown + '▌'; setPct(Math.min(98, 76 + rawMarkdown.length / 100)); };
+          await callStream(key, model, bSynthPrompt(reports, arr.length, opts), onC, 4000);
+          setPct(100);
+        }
+        renderOutput();
+        document.getElementById('btn-copy').disabled = false;
+        document.getElementById('btn-download').disabled = false;
+        showToast('Rulebook ready — ' + arr.length + ' tweets analyzed');
+      } catch (err) {
+        document.getElementById('progress-bar').classList.remove('streaming', 'active');
+        if (err.message !== 'Cancelled') { setStatus(`<div class="error-box"><strong>Error:</strong> ${err.message}<br><br>Check your API key and try again.</div>`); showToast('Error: ' + err.message); }
+        else { document.getElementById('empty-state').style.display = 'flex'; document.getElementById('rulebook-rendered').style.display = 'none'; showToast('Cancelled'); }
+      } finally {
+        btn.classList.remove('loading'); btn.disabled = false; cBtn.style.display = 'none';
+        setTimeout(() => { document.getElementById('progress-bar').classList.remove('active'); document.getElementById('progress-fill').style.width = '0%'; }, 1000);
       }
-      setPct(76);
-      setStatus(`<div style="padding:4px 0;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:10px;">Pass 2 of 2 — Synthesis</div><div style="font-size:13px;color:var(--ink2);margin-bottom:14px;">Merging <strong>${chunks.length} pattern reports</strong> · <strong>${arr.length} tweets</strong><span class="cursor"></span></div><div class="batch-grid">${gridHTML(chunks.length,-1,chunks.length)}</div><div style="font-size:11px;color:var(--ink3);margin-top:10px;">Weighing patterns by cross-batch frequency…</div></div>`);
-      const onC=t=>{rawMarkdown+=t;if(activeTab==='raw')document.getElementById('rulebook-raw').textContent=rawMarkdown+'▌';setPct(Math.min(98,76+rawMarkdown.length/100));};
-      await callStream(key,model,bSynthPrompt(reports,arr.length,opts),onC,4000);
-      setPct(100);
     }
-    renderOutput();
-    document.getElementById('btn-copy').disabled=false;
-    document.getElementById('btn-download').disabled=false;
-    showToast('Rulebook ready — '+arr.length+' tweets analyzed');
-  }catch(err){
-    document.getElementById('progress-bar').classList.remove('streaming','active');
-    if(err.message!=='Cancelled'){setStatus(`<div class="error-box"><strong>Error:</strong> ${err.message}<br><br>Check your API key and try again.</div>`);showToast('Error: '+err.message);}
-    else{document.getElementById('empty-state').style.display='flex';document.getElementById('rulebook-rendered').style.display='none';showToast('Cancelled');}
-  }finally{
-    btn.classList.remove('loading');btn.disabled=false;cBtn.style.display='none';
-    setTimeout(()=>{document.getElementById('progress-bar').classList.remove('active');document.getElementById('progress-fill').style.width='0%';},1000);
-  }
-}
-function cancelGeneration(){abortRequested=true;}
-function renderOutput(){
-  if(activeTab==='raw'){document.getElementById('rulebook-rendered').style.display='none';document.getElementById('rulebook-raw').style.display='block';document.getElementById('rulebook-raw').textContent=rawMarkdown;return;}
-  document.getElementById('rulebook-raw').style.display='none';document.getElementById('rulebook-rendered').style.display='block';
-  const arr=parseTweetArray();const n=arr?arr.length:0;
-  const rc=(rawMarkdown.match(/^[-*•]\s/gm)||[]).length+(rawMarkdown.match(/^\d+\.\s/gm)||[]).length;
-  const sc=(rawMarkdown.match(/^## /gm)||[]).length;
-  let html='';
-  if(n>0||rc>0)html+=`<div class="stats-row"><div class="stat"><div class="stat-value">${n}</div><div class="stat-label">Tweets analyzed</div></div><div class="stat"><div class="stat-value">${rc}</div><div class="stat-label">Rules extracted</div></div><div class="stat"><div class="stat-value">${sc}</div><div class="stat-label">Sections</div></div></div>`;
-  const lines=rawMarkdown.split('\n');
-  let html2='',inSection=false,inSubsection=false,bulletCount=0,inCode=false,codeBuf='';
-  for(let i=0;i<lines.length;i++){
-    const raw=lines[i];const t=raw.trim();
-    // code block toggle
-    if(t.startsWith('```')){
-      if(!inCode){inCode=true;codeBuf='';}
-      else{inCode=false;html2+=`<pre class="code-block">${codeBuf.trimEnd()}</pre>`;}
-      continue;
+    function cancelGeneration() { abortRequested = true; }
+    function renderOutput() {
+      if (activeTab === 'raw') { document.getElementById('rulebook-rendered').style.display = 'none'; document.getElementById('rulebook-raw').style.display = 'block'; document.getElementById('rulebook-raw').textContent = rawMarkdown; return; }
+      document.getElementById('rulebook-raw').style.display = 'none'; document.getElementById('rulebook-rendered').style.display = 'block';
+      const arr = parseTweetArray(); const n = arr ? arr.length : 0;
+      const rc = (rawMarkdown.match(/^[-*•]\s/gm) || []).length + (rawMarkdown.match(/^\d+\.\s/gm) || []).length;
+      const sc = (rawMarkdown.match(/^## /gm) || []).length;
+      let html = '';
+      if (n > 0 || rc > 0) html += `<div class="stats-row"><div class="stat"><div class="stat-value">${n}</div><div class="stat-label">Tweets analyzed</div></div><div class="stat"><div class="stat-value">${rc}</div><div class="stat-label">Rules extracted</div></div><div class="stat"><div class="stat-value">${sc}</div><div class="stat-label">Sections</div></div></div>`;
+      const lines = rawMarkdown.split('\n');
+      let html2 = '', inSection = false, inSubsection = false, bulletCount = 0, inCode = false, codeBuf = '';
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i]; const t = raw.trim();
+        // code block toggle
+        if (t.startsWith('```')) {
+          if (!inCode) { inCode = true; codeBuf = ''; }
+          else { inCode = false; html2 += `<pre class="code-block">${codeBuf.trimEnd()}</pre>`; }
+          continue;
+        }
+        if (inCode) { codeBuf += raw + '\n'; continue; }
+        if (!t) { if (inSubsection) { }; continue; }
+        // H1 — title
+        if (t.startsWith('# ') && !t.startsWith('## ')) {
+          const title = t.replace(/^# /, '');
+          html2 += `<div class="rb-title">${fmt(title)}</div>`; continue;
+        }
+        // HR
+        if (t === '---') { html2 += `<hr class="rb-hr">`; continue; }
+        // H2 — major section
+        if (t.startsWith('## ')) {
+          if (inSubsection) { html2 += '</div>'; inSubsection = false; }
+          if (inSection) { html2 += '</div>'; inSection = false; }
+          bulletCount = 0;
+          const title = t.replace(/^## /, '');
+          html2 += `<div class="rule-section"><div class="rule-section-title">${fmt(title)}</div>`;
+          inSection = true; continue;
+        }
+        // H3 — subsection
+        if (t.startsWith('### ')) {
+          if (inSubsection) { html2 += '</div>'; inSubsection = false; }
+          bulletCount = 0;
+          const title = t.replace(/^### /, '');
+          html2 += `<div class="rb-subsection"><div class="rb-subsection-title">${fmt(title)}</div>`;
+          inSubsection = true; continue;
+        }
+        // numbered list
+        if (t.match(/^\d+\.\s/)) {
+          bulletCount++;
+          const text = fmt(t.replace(/^\d+\.\s/, ''));
+          html2 += `<div class="rule-item"><div class="rule-bullet">${bulletCount}</div><div class="rule-text">${text}</div></div>`; continue;
+        }
+        // bullet
+        if (t.match(/^[-*•]\s/)) {
+          bulletCount++;
+          const text = fmt(t.replace(/^[-*•]\s/, ''));
+          html2 += `<div class="rule-item"><div class="rule-bullet">${bulletCount}</div><div class="rule-text">${text}</div></div>`; continue;
+        }
+        // plain paragraph
+        html2 += `<p class="rb-para">${fmt(t)}</p>`;
+      }
+      if (inSubsection) html2 += '</div>';
+      if (inSection) html2 += '</div>';
+      document.getElementById('rulebook-rendered').innerHTML = html + html2;
     }
-    if(inCode){codeBuf+=raw+'\n';continue;}
-    if(!t){if(inSubsection){}; continue;}
-    // H1 — title
-    if(t.startsWith('# ')&&!t.startsWith('## ')){
-      const title=t.replace(/^# /,'');
-      html2+=`<div class="rb-title">${fmt(title)}</div>`;continue;
-    }
-    // HR
-    if(t==='---'){html2+=`<hr class="rb-hr">`;continue;}
-    // H2 — major section
-    if(t.startsWith('## ')){
-      if(inSubsection){html2+='</div>';inSubsection=false;}
-      if(inSection){html2+='</div>';inSection=false;}
-      bulletCount=0;
-      const title=t.replace(/^## /,'');
-      html2+=`<div class="rule-section"><div class="rule-section-title">${fmt(title)}</div>`;
-      inSection=true;continue;
-    }
-    // H3 — subsection
-    if(t.startsWith('### ')){
-      if(inSubsection){html2+='</div>';inSubsection=false;}
-      bulletCount=0;
-      const title=t.replace(/^### /,'');
-      html2+=`<div class="rb-subsection"><div class="rb-subsection-title">${fmt(title)}</div>`;
-      inSubsection=true;continue;
-    }
-    // numbered list
-    if(t.match(/^\d+\.\s/)){
-      bulletCount++;
-      const text=fmt(t.replace(/^\d+\.\s/,''));
-      html2+=`<div class="rule-item"><div class="rule-bullet">${bulletCount}</div><div class="rule-text">${text}</div></div>`;continue;
-    }
-    // bullet
-    if(t.match(/^[-*•]\s/)){
-      bulletCount++;
-      const text=fmt(t.replace(/^[-*•]\s/,''));
-      html2+=`<div class="rule-item"><div class="rule-bullet">${bulletCount}</div><div class="rule-text">${text}</div></div>`;continue;
-    }
-    // plain paragraph
-    html2+=`<p class="rb-para">${fmt(t)}</p>`;
-  }
-  if(inSubsection)html2+='</div>';
-  if(inSection)html2+='</div>';
-  document.getElementById('rulebook-rendered').innerHTML=html+html2;
-}
-function fmt(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>');}
-function copyOutput(){navigator.clipboard.writeText(rawMarkdown).then(()=>showToast('Copied to clipboard'));}
-function downloadOutput(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rawMarkdown],{type:'text/markdown'}));a.download='style-rulebook.md';a.click();URL.revokeObjectURL(a.href);showToast('Downloaded style-rulebook.md');}
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
-document.getElementById('api-key').addEventListener('keydown',e=>{if(e.key==='Enter')generate();});
-</script>
+    function fmt(t) { return t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/`(.*?)`/g, '<code>$1</code>'); }
+    function copyOutput() { navigator.clipboard.writeText(rawMarkdown).then(() => showToast('Copied to clipboard')); }
+    function downloadOutput() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rawMarkdown], { type: 'text/markdown' })); a.download = 'style-rulebook.md'; a.click(); URL.revokeObjectURL(a.href); showToast('Downloaded style-rulebook.md'); }
+    function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
+    document.getElementById('api-key').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+  </script>
 </body>
+
 </html>
