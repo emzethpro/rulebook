@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" co([api-docs.deepseek.com](https://api-docs.deepseek.com/?utm_source=chatgpt.com))ial-scale=1.0" />
+  <title>Style Rule Book Extractor</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121933;
+      --panel-2: #182246;
+      --text: #eef2ff;
+      --muted: #a8b3cf;
+      --accent: #7aa2ff;
+      --border: #2a3767;
+      --good: #1fbf75;
+      --bad: #ff6b6b;
+      --warn: #ffb454;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(180deg, #0a0f1e 0%, #0f1730 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero {
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.1;
+    }
+    .sub {
+      color: var(--muted);
+      max-width: 900px;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .card {
+      background: rgba(18, 25, 51, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.28);
+    }
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      margin: 12px 0 6px;
+      color: var(--muted);
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      outline: none;
+      font: inherit;
+    }
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: rgba(24, 34, 70, 0.5);
+      color: var(--muted);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 0.08s ease, opacity 0.2s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .primary {
+      background: var(--accent);
+      color: #08101f;
+      font-weight: 700;
+    }
+    .secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .danger {
+      background: rgba(255, 107, 107, 0.12);
+      color: #ffd5d5;
+      border: 1px solid rgba(255, 107, 107, 0.3);
+    }
+    .status {
+      margin-top: 12px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      color: var(--muted);
+      white-space: pre-wrap;
+    }
+    .status.good { border-color: rgba(31, 191, 117, 0.35); color: #cdf6e3; }
+    .status.bad { border-color: rgba(255, 107, 107, 0.35); color: #ffd7d7; }
+    .status.warn { border-color: rgba(255, 180, 84, 0.35); color: #ffe7c7; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(122,162,255,0.12);
+      border: 1px solid rgba(122,162,255,0.25);
+      color: #cfe0ff;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    .meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .meta .mini {
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    .result-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: #08101f;
+      font-weight: 700;
+    }
+    pre {
+      margin: 0;
+      background: #0a1020;
+      color: #dbe6ff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      overflow: auto;
+      min-height: 420px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .foot {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .checkbox {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .checkbox input { width: auto; }
+    @media (max-width: 960px) {
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 26px; }
+      .wrap { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Style Rule Book Extractor</h1>
+      <div class="sub">
+        Upload a JSON file containing an author's writing, extract the writing mechanics into a structured rule book,
+        and export the result as JSON or Markdown. This version calls the DeepSeek Chat API directly from the browser.
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <div class="pill">Client-side prototype · bring your own DeepSeek API key</div>
+        <h2>Input</h2>
+
+        <label for="apiKey">DeepSeek API Key</label>
+        <input id="apiKey" type="password" placeholder="Paste your DeepSeek API key" />
+
+        <label for="baseUrl">Base URL</label>
+        <input id="baseUrl" type="text" value="https://api.deepseek.com/chat/completions" />
+
+        <div class="row">
+          <div>
+            <label for="model">Model</label>
+            <select id="model">
+              <option value="deepseek-chat" selected>deepseek-chat</option>
+              <option value="deepseek-reasoner">deepseek-reasoner</option>
+            </select>
+          </div>
+          <div>
+            <label for="maxTokens">Max Tokens</label>
+            <input id="maxTokens" type="number" min="512" max="64000" step="256" value="5000" />
+          </div>
+        </div>
+
+        <label for="authorName">Author Name</label>
+        <input id="authorName" type="text" placeholder="Optional: e.g. Joan Didion" />
+
+        <label for="sourceFile">Source JSON File</label>
+        <input id="sourceFile" type="file" accept="application/json,.json" />
+
+        <label for="textField">Preferred text field name</label>
+        <input id="textField" type="text" placeholder="Optional: e.g. content, body, text, caption" />
+
+        <label for="joinLimit">Max extracted characters</label>
+        <input id="joinLimit" type="number" min="2000" max="120000" step="1000" value="30000" />
+
+        <label for="customFocus">Extra extraction focus</label>
+        <textarea id="customFocus" placeholder="Optional: add extra dimensions like humor, point of view, metaphor patterns, CTA style, taboo phrases, etc."></textarea>
+
+        <div class="checkbox">
+          <input id="saveKey" type="checkbox" checked />
+          <span>Save API key and settings to local browser storage</span>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="extractBtn">Extract Rule Book</button>
+          <button class="secondary" id="previewBtn">Preview Source Text</button>
+          <button class="secondary" id="downloadJsonBtn" disabled>Download JSON</button>
+          <button class="secondary" id="downloadMdBtn" disabled>Download Markdown</button>
+          <button class="danger" id="clearBtn">Clear</button>
+        </div>
+
+        <div id="status" class="status">Ready.</div>
+
+        <div class="foot">
+          Security note: because this prototype runs in the browser, your API key can be exposed to anyone who can inspect the page on your machine.
+          For production, place the API call behind a small backend proxy and keep the key on the server.
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Output</h2>
+        <div class="meta">
+          <div class="mini" id="sampleMeta">No file loaded</div>
+          <div class="mini" id="textMeta">0 extracted chars</div>
+          <div class="mini" id="resultMeta">No rule book yet</div>
+        </div>
+
+        <div class="result-tabs">
+          <button class="secondary tab active" data-tab="json">JSON</button>
+          <button class="secondary tab" data-tab="markdown">Markdown</button>
+          <button class="secondary tab" data-tab="source">Extracted Source</button>
+          <button class="secondary tab" data-tab="prompt">Prompt Used</button>
+        </div>
+
+        <pre id="outputPane">Your structured rule book will appear here.</pre>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const els = {
+      apiKey: document.getElementById('apiKey'),
+      baseUrl: document.getElementById('baseUrl'),
+      model: document.getElementById('model'),
+      maxTokens: document.getElementById('maxTokens'),
+      authorName: document.getElementById('authorName'),
+      sourceFile: document.getElementById('sourceFile'),
+      textField: document.getElementById('textField'),
+      joinLimit: document.getElementById('joinLimit'),
+      customFocus: document.getElementById('customFocus'),
+      saveKey: document.getElementById('saveKey'),
+      extractBtn: document.getElementById('extractBtn'),
+      previewBtn: document.getElementById('previewBtn'),
+      downloadJsonBtn: document.getElementById('downloadJsonBtn'),
+      downloadMdBtn: document.getElementById('downloadMdBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      status: document.getElementById('status'),
+      outputPane: document.getElementById('outputPane'),
+      sampleMeta: document.getElementById('sampleMeta'),
+      textMeta: document.getElementById('textMeta'),
+      resultMeta: document.getElementById('resultMeta'),
+      tabs: Array.from(document.querySelectorAll('.tab')),
+    };
+
+    const state = {
+      rawJson: null,
+      extractedText: '',
+      ruleBook: null,
+      markdown: '',
+      prompt: '',
+      activeTab: 'json',
+      fileName: '',
+    };
+
+    function setStatus(message, tone = '') {
+      els.status.className = `status ${tone}`.trim();
+      els.status.textContent = message;
+    }
+
+    function saveSettings() {
+      if (!els.saveKey.checked) return;
+      localStorage.setItem('srbe_settings', JSON.stringify({
+        apiKey: els.apiKey.value,
+        baseUrl: els.baseUrl.value,
+        model: els.model.value,
+        maxTokens: els.maxTokens.value,
+        authorName: els.authorName.value,
+        textField: els.textField.value,
+        joinLimit: els.joinLimit.value,
+        customFocus: els.customFocus.value,
+        saveKey: els.saveKey.checked,
+      }));
+    }
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem('srbe_settings');
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        els.apiKey.value = s.apiKey || '';
+        els.baseUrl.value = s.baseUrl || 'https://api.deepseek.com/chat/completions';
+        els.model.value = s.model || 'deepseek-chat';
+        els.maxTokens.value = s.maxTokens || 5000;
+        els.authorName.value = s.authorName || '';
+        els.textField.value = s.textField || '';
+        els.joinLimit.value = s.joinLimit || 30000;
+        els.customFocus.value = s.customFocus || '';
+        els.saveKey.checked = s.saveKey !== false;
+      } catch (err) {
+        console.warn('Could not load settings', err);
+      }
+    }
+
+    function updateMeta() {
+      els.sampleMeta.textContent = state.fileName ? `Loaded: ${state.fileName}` : 'No file loaded';
+      els.textMeta.textContent = `${state.extractedText.length.toLocaleString()} extracted chars`;
+      els.resultMeta.textContent = state.ruleBook ? 'Rule book ready' : 'No rule book yet';
+    }
+
+    function flattenStrings(value, preferredField, acc = []) {
+      if (value == null) return acc;
+
+      if (typeof value === 'string') {
+        const clean = value.trim();
+        if (clean) acc.push(clean);
+        return acc;
+      }
+
+      if (Array.isArray(value)) {
+        for (const item of value) flattenStrings(item, preferredField, acc);
+        return acc;
+      }
+
+      if (typeof value === 'object') {
+        if (preferredField && typeof value[preferredField] === 'string') {
+          const clean = value[preferredField].trim();
+          if (clean) acc.push(clean);
+        }
+
+        for (const [key, val] of Object.entries(value)) {
+          if (preferredField && key === preferredField) continue;
+          if (typeof val === 'string') {
+            const lc = key.toLowerCase();
+            const likelyTextField = ['text', 'content', 'body', 'caption', 'post', 'article', 'copy', 'message', 'tweet', 'thread'].includes(lc);
+            if (!preferredField && likelyTextField && val.trim()) acc.push(val.trim());
+          } else {
+            flattenStrings(val, preferredField, acc);
+          }
+        }
+      }
+
+      return acc;
+    }
+
+    function dedupeAndTrim(strings, maxChars) {
+      const seen = new Set();
+      const out = [];
+      let total = 0;
+
+      for (const s of strings) {
+        const clean = s.replace(/\s+/g, ' ').trim();
+        if (!clean || seen.has(clean)) continue;
+        if (clean.length < 20) continue;
+        if (total + clean.length > maxChars) {
+          const remain = maxChars - total;
+          if (remain > 300) out.push(clean.slice(0, remain));
+          break;
+        }
+        seen.add(clean);
+        out.push(clean);
+        total += clean.length + 2;
+      }
+
+      return out.join('\n\n');
+    }
+
+    async function readJsonFile(file) {
+      const text = await file.text();
+      return JSON.parse(text);
+    }
+
+    function buildPrompt({ authorName, sampleText, customFocus }) {
+      const authorLine = authorName ? `The author being analyzed is: ${authorName}.` : 'The author name is unknown or intentionally omitted.';
+      const extraFocus = customFocus ? `Additional extraction requirements:\n${customFocus}` : 'No extra requirements beyond the default schema.';
+
+      return `You are a literary style extraction engine.
+Your job is to analyze a writing sample and convert it into an actionable style rule book for future text generation.
+${authorLine}
+
+Return valid JSON only.
+Do not include markdown fences.
+Do not quote large portions of the source text.
+Infer patterns from the sample and convert them into reusable rules.
+Be concrete, operational, and specific.
+
+Required JSON schema:
+{
+  "meta": {
+    "author_name": string,
+    "source_summary": string,
+    "confidence": number,
+    "dominant_impression": string
+  },
+  "cadence_and_rhythm": {
+    "sentence_length_pattern": [string],
+    "paragraph_flow": [string],
+    "pacing_rules": [string],
+    "transition_style": [string]
+  },
+  "vocabulary": {
+    "register": string,
+    "common_word_traits": [string],
+    "jargon_or_domain_markers": [string],
+    "favorite_devices": [string],
+    "tone_descriptors": [string]
+  },
+  "formatting_quirks": {
+    "punctuation_patterns": [string],
+    "layout_patterns": [string],
+    "emphasis_patterns": [string],
+    "question_usage": [string]
+  },
+  "narrative_mechanics": {
+    "point_of_view": [string],
+    "openings": [string],
+    "development_pattern": [string],
+    "ending_pattern": [string],
+    "argument_logic": [string]
+  },
+  "negative_prompt": {
+    "banned_words_or_phrases": [string],
+    "banned_structures": [string],
+    "avoidances": [string]
+  },
+  "generation_guidelines": {
+    "must_do": [string],
+    "should_do": [string],
+    "never_do": [string]
+  },
+  "style_fingerprint": {
+    "one_paragraph_summary": string,
+    "imitation_brief": string
+  }
+}
+
+Requirements:
+1. Capture cadence and rhythm.
+2. Capture vocabulary tendencies.
+3. Capture formatting quirks.
+4. Build a strong negative prompt that bans generic AI filler and author-inconsistent habits.
+5. Make each rule usable for generation later.
+6. Prefer short, direct, imperative rules.
+7. Confidence must be a number from 0 to 1.
+8. Use empty arrays only when evidence is truly absent.
+9. Be strict. Do not invent biographical facts.
+
+${extraFocus}
+
+Analyze this writing sample:\n\n${sampleText}`;
+    }
+
+    function toMarkdown(ruleBook) {
+      if (!ruleBook) return '';
+      const sections = [];
+      sections.push(`# Style Rule Book${ruleBook.meta?.author_name ? `: ${ruleBook.meta.author_name}` : ''}`);
+      sections.push(`**Dominant impression:** ${ruleBook.meta?.dominant_impression || ''}`);
+      sections.push(`**Confidence:** ${ruleBook.meta?.confidence ?? ''}`);
+      sections.push(`**Source summary:** ${ruleBook.meta?.source_summary || ''}`);
+
+      const addSection = (title, obj) => {
+        sections.push(`\n## ${title}`);
+        for (const [key, val] of Object.entries(obj || {})) {
+          const prettyKey = key.replace(/_/g, ' ');
+          if (Array.isArray(val)) {
+            sections.push(`\n### ${prettyKey}`);
+            if (!val.length) {
+              sections.push(`- None identified`);
+            } else {
+              for (const item of val) sections.push(`- ${item}`);
+            }
+          } else if (val && typeof val === 'object') {
+            sections.push(`\n### ${prettyKey}`);
+            for (const [k2, v2] of Object.entries(val)) {
+              const prettyKey2 = k2.replace(/_/g, ' ');
+              sections.push(`- **${prettyKey2}:** ${Array.isArray(v2) ? v2.join('; ') : v2}`);
+            }
+          } else {
+            sections.push(`- **${prettyKey}:** ${val}`);
+          }
+        }
+      };
+
+      addSection('Cadence and Rhythm', ruleBook.cadence_and_rhythm);
+      addSection('Vocabulary', ruleBook.vocabulary);
+      addSection('Formatting Quirks', ruleBook.formatting_quirks);
+      addSection('Narrative Mechanics', ruleBook.narrative_mechanics);
+      addSection('Negative Prompt', ruleBook.negative_prompt);
+      addSection('Generation Guidelines', ruleBook.generation_guidelines);
+      addSection('Style Fingerprint', ruleBook.style_fingerprint);
+
+      return sections.join('\n');
+    }
+
+    function renderTab() {
+      els.tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === state.activeTab));
+      if (state.activeTab === 'json') {
+        els.outputPane.textContent = state.ruleBook ? JSON.stringify(state.ruleBook, null, 2) : 'Your structured rule book will appear here.';
+      } else if (state.activeTab === 'markdown') {
+        els.outputPane.textContent = state.markdown || 'Markdown export will appear here.';
+      } else if (state.activeTab === 'source') {
+        els.outputPane.textContent = state.extractedText || 'Extracted source text preview will appear here.';
+      } else if (state.activeTab === 'prompt') {
+        els.outputPane.textContent = state.prompt || 'The extraction prompt will appear here.';
+      }
+    }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      renderTab();
+    }
+
+    function downloadFile(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function ensureExtractedText() {
+      const file = els.sourceFile.files?.[0];
+      if (!file) throw new Error('Please upload a JSON file first.');
+      if (!state.rawJson) {
+        state.rawJson = await readJsonFile(file);
+        state.fileName = file.name;
+      }
+      const preferredField = els.textField.value.trim();
+      const strings = flattenStrings(state.rawJson, preferredField);
+      const maxChars = Number(els.joinLimit.value || 30000);
+      state.extractedText = dedupeAndTrim(strings, maxChars);
+      updateMeta();
+      if (!state.extractedText) {
+        throw new Error('No usable text was found in the JSON. Try setting the preferred text field name.');
+      }
+      return state.extractedText;
+    }
+
+    async function extractRuleBook() {
+      const apiKey = els.apiKey.value.trim();
+      if (!apiKey) throw new Error('Please provide a DeepSeek API key.');
+      saveSettings();
+
+      const sampleText = await ensureExtractedText();
+      const authorName = els.authorName.value.trim();
+      const customFocus = els.customFocus.value.trim();
+      const prompt = buildPrompt({ authorName, sampleText, customFocus });
+      state.prompt = prompt;
+      renderTab();
+
+      const body = {
+        model: els.model.value,
+        messages: [
+          {
+            role: 'system',
+            content: 'You extract writing mechanics into structured rule books. Always return valid JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: Number(els.maxTokens.value || 5000),
+        stream: false
+      };
+
+      if (els.model.value === 'deepseek-reasoner') {
+        body.thinking = { type: 'disabled' };
+      }
+
+      const res = await fetch(els.baseUrl.value.trim(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      const raw = await res.text();
+      if (!res.ok) {
+        throw new Error(`API error ${res.status}: ${raw}`);
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(raw);
+      } catch {
+        throw new Error('The API returned non-JSON content. Raw response: ' + raw.slice(0, 1200));
+      }
+
+      const content = payload?.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new Error('No message content found in API response.');
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        throw new Error('Model output was not valid JSON. Output: ' + content.slice(0, 1200));
+      }
+
+      state.ruleBook = parsed;
+      state.markdown = toMarkdown(parsed);
+      els.downloadJsonBtn.disabled = false;
+      els.downloadMdBtn.disabled = false;
+      updateMeta();
+      switchTab('json');
+    }
+
+    els.previewBtn.addEventListener('click', async () => {
+      try {
+        setStatus('Reading file and extracting source text...');
+        await ensureExtractedText();
+        switchTab('source');
+        setStatus('Source text extracted successfully.', 'good');
+      } catch (err) {
+        setStatus(err.message, 'bad');
+      }
+    });
+
+    els.extractBtn.addEventListener('click', async () => {
+      try {
+        els.extractBtn.disabled = true;
+        setStatus('Analyzing source text and calling DeepSeek...');
+        await extractRuleBook();
+        setStatus('Rule book extracted successfully.', 'good');
+      } catch (err) {
+        console.error(err);
+        const maybeCors = String(err.message || '').includes('Failed to fetch')
+          ? '\n\nPossible cause: browser CORS restriction. If that happens, move the API call to a small backend proxy.'
+          : '';
+        setStatus((err.message || 'Unknown error') + maybeCors, 'bad');
+      } finally {
+        els.extractBtn.disabled = false;
+      }
+    });
+
+    els.downloadJsonBtn.addEventListener('click', () => {
+      if (!state.ruleBook) return;
+      downloadFile('style-rule-book.json', JSON.stringify(state.ruleBook, null, 2), 'application/json');
+      setStatus('JSON downloaded.', 'good');
+    });
+
+    els.downloadMdBtn.addEventListener('click', () => {
+      if (!state.markdown) return;
+      downloadFile('style-rule-book.md', state.markdown, 'text/markdown');
+      setStatus('Markdown downloaded.', 'good');
+    });
+
+    els.clearBtn.addEventListener('click', () => {
+      state.rawJson = null;
+      state.extractedText = '';
+      state.ruleBook = null;
+      state.markdown = '';
+      state.prompt = '';
+      state.fileName = '';
+      els.sourceFile.value = '';
+      els.downloadJsonBtn.disabled = true;
+      els.downloadMdBtn.disabled = true;
+      updateMeta();
+      switchTab('json');
+      setStatus('Cleared current file and output.');
+    });
+
+    els.tabs.forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    ['apiKey', 'baseUrl', 'model', 'maxTokens', 'authorName', 'textField', 'joinLimit', 'customFocus', 'saveKey'].forEach(key => {
+      els[key].addEventListener('change', saveSettings);
+      els[key].addEventListener('input', saveSettings);
+    });
+
+    els.sourceFile.addEventListener('change', async () => {
+      state.rawJson = null;
+      state.extractedText = '';
+      state.ruleBook = null;
+      state.markdown = '';
+      state.prompt = '';
+      state.fileName = '';
+      els.downloadJsonBtn.disabled = true;
+      els.downloadMdBtn.disabled = true;
+      updateMeta();
+      try {
+        const file = els.sourceFile.files?.[0];
+        if (!file) return;
+        state.rawJson = await readJsonFile(file);
+        state.fileName = file.name;
+        updateMeta();
+        setStatus(`Loaded ${file.name}. Click “Preview Source Text” or “Extract Rule Book”.`, 'good');
+      } catch (err) {
+        state.rawJson = null;
+        state.fileName = '';
+        updateMeta();
+        setStatus('Invalid JSON file: ' + err.message, 'bad');
+      }
+    });
+
+    loadSettings();
+    updateMeta();
+    renderTab();
+  </script>
+</body>
+</html>
