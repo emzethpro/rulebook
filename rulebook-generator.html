@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rulebook — Style Extractor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300;1,9..144,500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:    #1a1814;
+    --ink2:   #4a4640;
+    --ink3:   #8a857e;
+    --paper:  #f5f2eb;
+    --paper2: #edeae0;
+    --paper3: #e3dfd3;
+    --accent: #c85a2a;
+    --green:  #2d6b4a;
+    --rule:   rgba(26,24,20,0.12);
+    --radius: 6px;
+    --mono:   'DM Mono', monospace;
+    --serif:  'Fraunces', Georgia, serif;
+  }
+
+  body { background:var(--paper); color:var(--ink); font-family:var(--mono); font-size:13px; line-height:1.7; min-height:100vh; }
+
+  header { border-bottom:1px solid var(--rule); padding:24px 40px; display:flex; align-items:baseline; gap:24px; }
+  .logo { font-family:var(--serif); font-size:26px; font-weight:700; letter-spacing:-0.5px; }
+  .logo em { font-style:italic; color:var(--accent); }
+  .tagline { font-size:11px; color:var(--ink3); letter-spacing:0.08em; text-transform:uppercase; }
+
+  .workspace { display:grid; grid-template-columns:420px 1fr; min-height:calc(100vh - 73px); }
+
+  .panel-left { border-right:1px solid var(--rule); display:flex; flex-direction:column; }
+
+  .section { border-bottom:1px solid var(--rule); padding:20px 24px; }
+
+  .label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink3); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .label::after { content:''; flex:1; height:1px; background:var(--rule); }
+
+  /* Provider pills */
+  .provider-pills { display:flex; gap:6px; }
+  .provider-pill {
+    flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:8px 10px; border-radius:var(--radius); border:1px solid var(--rule);
+    background:var(--paper2); font-family:var(--mono); font-size:11px; color:var(--ink2);
+    cursor:pointer; transition:all 0.15s; letter-spacing:0.03em;
+  }
+  .provider-pill:hover { border-color:var(--ink3); }
+  .provider-pill.active { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .pill-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+  input[type="password"], input[type="text"], textarea, select {
+    width:100%; background:var(--paper2); border:1px solid var(--rule); border-radius:var(--radius);
+    padding:9px 12px; font-family:var(--mono); font-size:12px; color:var(--ink);
+    outline:none; transition:border-color 0.15s, background 0.15s; resize:none;
+  }
+  input:focus, textarea:focus, select:focus { border-color:var(--accent); background:var(--paper); }
+  input::placeholder, textarea::placeholder { color:var(--ink3); }
+
+  .key-wrap { position:relative; }
+  .key-wrap input { padding-right:52px; }
+  .key-toggle {
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink3);
+    cursor:pointer; background:none; border:none; font-family:var(--mono); padding:2px 4px;
+    transition:color 0.15s;
+  }
+  .key-toggle:hover { color:var(--accent); }
+
+  .opt-label { font-size:10px; color:var(--ink3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:5px; }
+  .field-gap { margin-top:12px; }
+
+  /* Upload */
+  .upload-zone {
+    border:1px dashed var(--rule); border-radius:var(--radius); padding:18px;
+    text-align:center; cursor:pointer; transition:border-color 0.15s, background 0.15s;
+    background:var(--paper2); position:relative;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color:var(--accent); background:var(--paper); }
+  .upload-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .file-name { font-size:11px; color:var(--green); margin-top:8px; font-style:italic; }
+
+  .or-divider { display:flex; align-items:center; gap:10px; margin:12px 0; font-size:10px; color:var(--ink3); letter-spacing:0.08em; text-transform:uppercase; }
+  .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:var(--rule); }
+
+  textarea.tweet-paste { height:140px; font-size:11.5px; line-height:1.6; }
+
+  .options-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .btn-generate {
+    margin:20px 24px; width:calc(100% - 48px);
+    background:var(--ink); color:var(--paper); border:none; border-radius:var(--radius);
+    padding:13px 20px; font-family:var(--serif); font-size:15px; font-weight:700;
+    font-style:italic; letter-spacing:0.02em; cursor:pointer;
+    transition:background 0.15s, transform 0.1s;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .btn-generate:hover { background:var(--accent); }
+  .btn-generate:active { transform:scale(0.99); }
+  .btn-generate:disabled { background:var(--ink3); cursor:not-allowed; transform:none; }
+
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; display:none; }
+  .btn-generate.loading .spinner { display:block; }
+  .btn-generate.loading .btn-text { opacity:0.6; }
+
+  /* Right panel */
+  .panel-right { display:flex; flex-direction:column; }
+  .output-header { padding:18px 32px 14px; border-bottom:1px solid var(--rule); display:flex; align-items:center; justify-content:space-between; }
+  .output-title { font-family:var(--serif); font-size:18px; font-weight:300; font-style:italic; color:var(--ink2); }
+  .output-actions { display:flex; gap:8px; }
+  .btn-small {
+    font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.08em;
+    padding:6px 12px; border-radius:var(--radius); border:1px solid var(--rule);
+    background:transparent; color:var(--ink2); cursor:pointer; transition:all 0.15s;
+  }
+  .btn-small:hover { border-color:var(--ink2); color:var(--ink); }
+  .btn-small.primary { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .btn-small.primary:hover { background:var(--accent); border-color:var(--accent); }
+  .btn-small:disabled { opacity:0.4; cursor:not-allowed; }
+
+  .tabs { display:flex; border-bottom:1px solid var(--rule); padding:0 32px; }
+  .tab { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink3); padding:11px 14px; cursor:pointer; border-bottom:2px solid transparent; transition:color 0.15s, border-color 0.15s; background:none; border-top:none; border-left:none; border-right:none; font-family:var(--mono); }
+  .tab:hover { color:var(--ink); }
+  .tab.active { color:var(--ink); border-bottom-color:var(--accent); }
+
+  .progress-bar { height:2px; background:var(--rule); position:relative; overflow:hidden; display:none; }
+  .progress-bar.active { display:block; }
+  @keyframes indeterminate { from{transform:translateX(-100%)} to{transform:translateX(400%)} }
+  .progress-bar.streaming .progress-fill { width:40%!important; animation:indeterminate 1.2s ease-in-out infinite; }
+  .progress-fill { height:100%; background:var(--accent); width:0%; transition:width 0.3s ease; }
+
+  .output-body { flex:1; overflow-y:auto; padding:28px 32px; }
+
+  .empty-state { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--ink3); text-align:center; }
+  .empty-icon { font-family:var(--serif); font-size:48px; font-style:italic; font-weight:300; opacity:0.25; line-height:1; }
+  .empty-text { font-size:12px; max-width:260px; line-height:1.7; opacity:0.6; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  .rulebook { max-width:680px; animation:fadeIn 0.4s ease; }
+
+  .rule-section { margin-bottom:32px; }
+  .rule-section-title { font-family:var(--serif); font-size:13px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--accent); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--rule); display:flex; align-items:center; gap:8px; }
+  .rule-section-title::before { content:'§'; font-style:italic; font-weight:300; opacity:0.5; }
+
+  .rule-item { display:flex; gap:14px; margin-bottom:9px; align-items:flex-start; }
+  .rule-bullet { flex-shrink:0; width:18px; height:18px; border:1px solid var(--ink3); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--ink3); margin-top:2px; font-weight:500; }
+  .rule-text { line-height:1.65; color:var(--ink2); }
+  .rule-text strong { color:var(--ink); font-weight:500; }
+  .rule-text em { font-style:italic; color:var(--accent); }
+  .rule-text code { background:var(--paper3); padding:1px 5px; border-radius:3px; font-size:11px; color:var(--ink); font-family:var(--mono); }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .cursor { display:inline-block; width:2px; height:14px; background:var(--accent); margin-left:2px; vertical-align:text-bottom; animation:blink 0.8s step-end infinite; }
+
+  .raw-output { font-family:var(--mono); font-size:12px; line-height:1.8; color:var(--ink2); white-space:pre-wrap; background:var(--paper2); border:1px solid var(--rule); border-radius:var(--radius); padding:20px; }
+
+  .stats-row { display:flex; gap:24px; margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid var(--rule); }
+  .stat { display:flex; flex-direction:column; gap:2px; }
+  .stat-value { font-family:var(--serif); font-size:24px; font-weight:700; color:var(--ink); line-height:1; }
+  .stat-label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink3); }
+
+  .error-box { background:#fdf0ee; border:1px solid #e8b4a8; border-radius:var(--radius); padding:16px; color:#8b3520; font-size:12px; line-height:1.6; }
+
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--ink); color:var(--paper); font-size:12px; padding:10px 16px; border-radius:var(--radius); opacity:0; transform:translateY(8px); transition:all 0.2s; pointer-events:none; z-index:100; }
+  .toast.show { opacity:1; transform:none; }
+
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--rule); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--ink3); }
+
+  @media (max-width:900px) {
+    .workspace { grid-template-columns:1fr; }
+    .panel-left { border-right:none; border-bottom:1px solid var(--rule); }
+    header { padding:18px 24px; }
+    .output-body { padding:20px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Rule<em>book</em></div>
+  <div class="tagline">Tweet compilation → writing style rulebook</div>
+</header>
+
+<div class="workspace">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+
+    <!-- Provider + Key -->
+    <div class="section">
+      <div class="label">Provider</div>
+      <div class="provider-pills">
+        <button class="provider-pill active" onclick="setProvider('anthropic',this)">
+          <span class="pill-dot" style="background:#c85a2a;"></span>Anthropic
+        </button>
+        <button class="provider-pill" onclick="setProvider('gemini',this)">
+          <span class="pill-dot" style="background:#4285f4;"></span>Gemini
+        </button>
+        <button class="provider-pill" onclick="setProvider('deepseek',this)">
+          <span class="pill-dot" style="background:#2d8a8a;"></span>DeepSeek
+        </button>
+      </div>
+
+      <div class="field-gap">
+        <div class="opt-label">Model</div>
+        <select id="model-select"></select>
+      </div>
+
+      <div class="field-gap">
+        <div class="opt-label">API Key</div>
+        <div class="key-wrap">
+          <input type="password" id="api-key" placeholder="sk-ant-api03-..." autocomplete="off">
+          <button class="key-toggle" onclick="toggleKey()">Show</button>
+        </div>
+        <div id="key-hint" style="font-size:10px;color:var(--ink3);margin-top:5px;">Key stays in your browser. Never stored or forwarded.</div>
+      </div>
+    </div>
+
+    <!-- Tweet input -->
+    <div class="section">
+      <div class="label">Tweet compilation</div>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".json,.txt,.csv" onchange="handleFile(this)">
+        <div style="font-size:20px;margin-bottom:4px;">↑</div>
+        <div style="font-size:12px;color:var(--ink2);">Drop file or click to upload</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">.json · .txt · .csv</div>
+      </div>
+      <div class="file-name" id="file-name" style="display:none;"></div>
+      <div class="or-divider">or paste</div>
+      <textarea class="tweet-paste" id="tweet-paste" placeholder="Paste tweets here, one per line or as JSON…"></textarea>
+    </div>
+
+    <!-- Options -->
+    <div class="section">
+      <div class="label">Options</div>
+      <div class="options-grid">
+        <div>
+          <div class="opt-label">Depth</div>
+          <select id="opt-depth">
+            <option value="brief">Brief</option>
+            <option value="standard">Standard</option>
+            <option value="deep" selected>Deep</option>
+          </select>
+        </div>
+        <div>
+          <div class="opt-label">Format</div>
+          <select id="opt-format">
+            <option value="structured" selected>Structured</option>
+            <option value="prose">Prose</option>
+            <option value="checklist">Checklist</option>
+          </select>
+        </div>
+        <div>
+          <div class="opt-label">Focus</div>
+          <select id="opt-focus">
+            <option value="all" selected>All dimensions</option>
+            <option value="voice">Voice & tone</option>
+            <option value="structure">Structure</option>
+            <option value="vocabulary">Vocabulary</option>
+          </select>
+        </div>
+        <div>
+          <div class="opt-label">Output</div>
+          <select id="opt-output">
+            <option value="prompt-ready" selected>Prompt-ready</option>
+            <option value="editorial">Editorial</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-generate" id="generate-btn" onclick="generate()">
+      <div class="spinner"></div>
+      <span class="btn-text">Extract Rulebook</span>
+    </button>
+
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="output-header">
+      <div class="output-title">Style Rulebook</div>
+      <div class="output-actions">
+        <button class="btn-small" id="btn-copy" onclick="copyOutput()" disabled>Copy</button>
+        <button class="btn-small primary" id="btn-download" onclick="downloadOutput()" disabled>Download .md</button>
+      </div>
+    </div>
+    <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('rendered',this)">Rendered</button>
+      <button class="tab" onclick="switchTab('raw',this)">Raw</button>
+    </div>
+    <div class="output-body" id="output-body">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">§</div>
+        <div class="empty-text">Upload a tweet compilation and hit Extract Rulebook to generate a prompt-ready style guide.</div>
+      </div>
+      <div class="rulebook" id="rulebook-rendered" style="display:none;"></div>
+      <pre class="raw-output" id="rulebook-raw" style="display:none;"></pre>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Provider config ──
+const PROVIDERS = {
+  anthropic: {
+    hint: 'Key stays in your browser. Never stored or forwarded.',
+    placeholder: 'sk-ant-api03-…',
+    models: [
+      { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (recommended)' },
+      { id: 'claude-opus-4-20250514',   label: 'Claude Opus 4' },
+      { id: 'claude-haiku-4-5-20251001',label: 'Claude Haiku 4.5 (fast)' },
+    ]
+  },
+  gemini: {
+    hint: 'Get your key at aistudio.google.com/apikey',
+    placeholder: 'AIza…',
+    models: [
+      { id: 'gemini-2.0-flash',        label: 'Gemini 2.0 Flash (recommended)' },
+      { id: 'gemini-2.0-flash-lite',   label: 'Gemini 2.0 Flash Lite (fast)' },
+      { id: 'gemini-1.5-pro',          label: 'Gemini 1.5 Pro' },
+    ]
+  },
+  deepseek: {
+    hint: 'Get your key at platform.deepseek.com',
+    placeholder: 'sk-…',
+    models: [
+      { id: 'deepseek-chat',      label: 'DeepSeek V3 (recommended)' },
+      { id: 'deepseek-reasoner',  label: 'DeepSeek R1 (reasoning)' },
+    ]
+  }
+};
+
+let currentProvider = 'anthropic';
+let rawMarkdown = '';
+let activeTab = 'rendered';
+let fileContent = '';
+
+// ── Init ──
+setProvider('anthropic', document.querySelector('.provider-pill'));
+
+function setProvider(name, btn) {
+  currentProvider = name;
+  document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+
+  const cfg = PROVIDERS[name];
+  document.getElementById('api-key').placeholder = cfg.placeholder;
+  document.getElementById('key-hint').textContent = cfg.hint;
+
+  const sel = document.getElementById('model-select');
+  sel.innerHTML = cfg.models.map(m =>
+    `<option value="${m.id}">${m.label}</option>`
+  ).join('');
+}
+
+// ── File handling ──
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    fileContent = e.target.result;
+    document.getElementById('file-name').textContent = '✓ ' + file.name;
+    document.getElementById('file-name').style.display = 'block';
+    document.getElementById('tweet-paste').value = '';
+  };
+  reader.readAsText(file);
+}
+
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag');
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  const input = document.getElementById('file-input');
+  const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files;
+  handleFile(input);
+});
+
+function toggleKey() {
+  const inp = document.getElementById('api-key');
+  const btn = document.querySelector('.key-toggle');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
+}
+
+function switchTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (rawMarkdown) renderOutput();
+}
+
+function getInputText() {
+  const src = fileContent || document.getElementById('tweet-paste').value.trim();
+  if (!src) return null;
+  try {
+    const json = JSON.parse(src);
+    if (json.examples) return json.examples.map(e => e.text).join('\n\n---\n\n');
+    if (Array.isArray(json)) {
+      if (typeof json[0] === 'string') return json.join('\n\n---\n\n');
+      if (json[0]?.text) return json.map(e => e.text).join('\n\n---\n\n');
+    }
+    return JSON.stringify(json);
+  } catch { return src; }
+}
+
+function buildPrompt(tweets) {
+  const depth = document.getElementById('opt-depth').value;
+  const format = document.getElementById('opt-format').value;
+  const focus = document.getElementById('opt-focus').value;
+  const output = document.getElementById('opt-output').value;
+
+  const depthInstr = { brief:'Be concise. 3-4 rules per section.', standard:'Be thorough. 5-6 rules per section with examples.', deep:'Be exhaustive. 6-8 rules per section. Include anti-patterns and edge cases.' }[depth];
+  const focusInstr = { all:'Cover all style dimensions: structure, tone, vocabulary, punctuation, sentence rhythm, and what to avoid.', voice:'Focus exclusively on voice, tone, emotional register, and attitude.', structure:'Focus on tweet structure, openings, endings, list formats, and sentence patterns.', vocabulary:'Focus on word choice, recurring terms, register, slang, and forbidden words.' }[focus];
+  const formatInstr = { structured:'Output as structured sections with a clear heading per section (use ## for headings) and bullet points inside each section.', prose:'Output as flowing prose paragraphs, one per style dimension.', checklist:'Output as a flat numbered checklist of all rules, no section headings.' }[format];
+  const outputInstr = output === 'prompt-ready'
+    ? 'The final rulebook will be pasted directly into an LLM prompt as a writing style guide. Make it directive and precise — use imperative language ("Do X", "Avoid Y").'
+    : 'Write the rulebook as an editorial style guide a human writer would consult.';
+
+  return `You are a writing style analyst. Your task is to read a compilation of tweets and extract a precise, actionable writing style rulebook.
+
+${outputInstr}
+
+ANALYSIS DEPTH: ${depthInstr}
+FOCUS AREA: ${focusInstr}
+FORMAT: ${formatInstr}
+
+WHAT TO DETECT AND DOCUMENT:
+1. Opening patterns — how tweets begin, what hooks are used
+2. Sentence rhythm — short bursts vs long builds, pacing
+3. Core structural templates — recurring formats (numbered lists, contrast pairs, "Here's why:" teases, single declarations)
+4. Emotional register — warm/dry/sharp/earnest/chaotic etc.
+5. Vocabulary patterns — recurring words, domain register, what's never used
+6. Punctuation habits — em-dashes, colons, ellipses, caps usage
+7. The "core move" — the underlying rhetorical pattern (reframe, validate, challenge, teach)
+8. Anti-patterns — what this voice never does, what feels wrong for this style
+
+OUTPUT FORMAT:
+- Start with a 2-sentence voice summary at the top
+- Then the sections as specified
+- End with a "Quick Reference" section: 5 rules someone could memorize
+
+Do NOT copy sentences from the tweets verbatim. Extract patterns and express them as rules.
+
+---
+TWEET COMPILATION:
+${tweets}`;
+}
+
+// ── Provider-specific fetch functions ──
+
+async function fetchAnthropic(apiKey, model, prompt, onChunk) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({ model, max_tokens: 2000, stream: true, messages: [{ role:'user', content:prompt }] })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(data);
+        if (evt.type === 'content_block_delta' && evt.delta?.text) onChunk(evt.delta.text);
+      } catch {}
+    }
+  }
+}
+
+async function fetchGemini(apiKey, model, prompt, onChunk) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ role:'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000 } })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (!data || data === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(data);
+        const text = evt.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) onChunk(text);
+      } catch {}
+    }
+  }
+}
+
+async function fetchDeepSeek(apiKey, model, prompt, onChunk) {
+  const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ model, max_tokens: 2000, stream: true, messages: [{ role:'user', content: prompt }] })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(data);
+        const text = evt.choices?.[0]?.delta?.content;
+        if (text) onChunk(text);
+      } catch {}
+    }
+  }
+}
+
+// ── Main generate ──
+async function generate() {
+  const apiKey = document.getElementById('api-key').value.trim();
+  if (!apiKey) { showToast('Enter your API key'); return; }
+
+  const tweets = getInputText();
+  if (!tweets) { showToast('Provide tweets via file upload or paste'); return; }
+
+  const model = document.getElementById('model-select').value;
+  const prompt = buildPrompt(tweets);
+
+  const btn = document.getElementById('generate-btn');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  const pb = document.getElementById('progress-bar');
+  pb.classList.add('active', 'streaming');
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('rulebook-rendered').style.display = 'none';
+  document.getElementById('rulebook-raw').style.display = 'none';
+  rawMarkdown = '';
+
+  if (activeTab === 'rendered') {
+    document.getElementById('rulebook-rendered').style.display = 'block';
+    document.getElementById('rulebook-rendered').innerHTML = '<span style="color:var(--ink3);font-size:12px;font-style:italic;">Analyzing tweets<span class="cursor"></span></span>';
+  } else {
+    document.getElementById('rulebook-raw').style.display = 'block';
+    document.getElementById('rulebook-raw').textContent = '';
+  }
+
+  const onChunk = text => {
+    rawMarkdown += text;
+    if (activeTab === 'raw') {
+      document.getElementById('rulebook-raw').textContent = rawMarkdown + '▌';
+    }
+  };
+
+  try {
+    const fetchers = { anthropic: fetchAnthropic, gemini: fetchGemini, deepseek: fetchDeepSeek };
+    await fetchers[currentProvider](apiKey, model, prompt, onChunk);
+
+    pb.classList.remove('streaming', 'active');
+    renderOutput();
+    document.getElementById('btn-copy').disabled = false;
+    document.getElementById('btn-download').disabled = false;
+    showToast('Rulebook ready');
+  } catch (err) {
+    pb.classList.remove('streaming', 'active');
+    document.getElementById('rulebook-rendered').style.display = 'block';
+    document.getElementById('rulebook-rendered').innerHTML = `<div class="error-box"><strong>Error:</strong> ${err.message}<br><br>Check your API key and try again.</div>`;
+    document.getElementById('rulebook-raw').style.display = 'none';
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+// ── Render ──
+function renderOutput() {
+  if (activeTab === 'raw') {
+    document.getElementById('rulebook-rendered').style.display = 'none';
+    document.getElementById('rulebook-raw').style.display = 'block';
+    document.getElementById('rulebook-raw').textContent = rawMarkdown;
+    return;
+  }
+  document.getElementById('rulebook-raw').style.display = 'none';
+  document.getElementById('rulebook-rendered').style.display = 'block';
+
+  const tweetCount = getInputText()?.split('---').length || 0;
+  const ruleCount = (rawMarkdown.match(/^[-*•]\s/gm)||[]).length + (rawMarkdown.match(/^\d+\.\s/gm)||[]).length;
+  const sectionCount = (rawMarkdown.match(/^#{1,3}\s/gm)||[]).length;
+
+  let html = '';
+  if (tweetCount > 1 || ruleCount > 0) {
+    html += `<div class="stats-row">
+      <div class="stat"><div class="stat-value">${tweetCount}</div><div class="stat-label">Tweets analyzed</div></div>
+      <div class="stat"><div class="stat-value">${ruleCount}</div><div class="stat-label">Rules extracted</div></div>
+      <div class="stat"><div class="stat-value">${sectionCount}</div><div class="stat-label">Sections</div></div>
+    </div>`;
+  }
+
+  let inSection = false, bulletCount = 0;
+  for (const line of rawMarkdown.split('\n')) {
+    const t = line.trim(); if (!t) continue;
+    if (t.match(/^#{1,3}\s/)) {
+      if (inSection) html += '</div>';
+      bulletCount = 0;
+      html += `<div class="rule-section"><div class="rule-section-title">${t.replace(/^#+\s/,'')}</div>`;
+      inSection = true;
+    } else if (t.match(/^[-*•]\s/) || t.match(/^\d+\.\s/)) {
+      bulletCount++;
+      const text = fmt(t.replace(/^[-*•]\s/,'').replace(/^\d+\.\s/,''));
+      html += `<div class="rule-item"><div class="rule-bullet">${bulletCount}</div><div class="rule-text">${text}</div></div>`;
+    } else {
+      html += `<p style="color:var(--ink2);margin-bottom:10px;line-height:1.7;">${fmt(t)}</p>`;
+    }
+  }
+  if (inSection) html += '</div>';
+  document.getElementById('rulebook-rendered').innerHTML = html;
+}
+
+function fmt(t) {
+  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>');
+}
+
+function copyOutput() {
+  navigator.clipboard.writeText(rawMarkdown).then(() => showToast('Copied to clipboard'));
+}
+
+function downloadOutput() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([rawMarkdown], { type:'text/markdown' }));
+  a.download = 'style-rulebook.md'; a.click(); URL.revokeObjectURL(a.href);
+  showToast('Downloaded style-rulebook.md');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+document.getElementById('api-key').addEventListener('keydown', e => { if (e.key==='Enter') generate(); });
+</script>
+</body>
+</html>
