@@ -845,9 +845,7 @@
       <div class="section">
         <div class="label">Provider</div>
         <div class="provider-pills">
-          <button class="provider-pill active" onclick="setProvider('anthropic',this)"><span class="pill-dot"
-              style="background:#c85a2a;"></span>Anthropic</button>
-          <button class="provider-pill" onclick="setProvider('gemini',this)"><span class="pill-dot"
+          <button class="provider-pill active" onclick="setProvider('gemini',this)"><span class="pill-dot"
               style="background:#4285f4;"></span>Gemini</button>
           <button class="provider-pill" onclick="setProvider('openai',this)"><span class="pill-dot"
               style="background:#10a37f;"></span>OpenAI</button>
@@ -887,12 +885,30 @@
         <div class="count-row"><span class="count-badge" id="cb2"></span><span class="pipe-badge" id="pb2"></span></div>
       </div>
       <div class="section">
-        <div class="label">Content type</div>
-        <div class="provider-pills">
-          <button class="provider-pill active" id="opt-short" onclick="setContentType('short',this)"><span class="pill-dot" style="background:var(--accent);"></span>Short-form</button>
-          <button class="provider-pill" id="opt-long" onclick="setContentType('long',this)"><span class="pill-dot" style="background:var(--green);"></span>Long-form</button>
+        <div class="label">Options</div>
+        <div class="field-gap" style="margin-top:0;">
+          <div class="opt-label">Content type</div>
+          <div class="provider-pills">
+            <button class="provider-pill active" id="opt-short" onclick="setContentType('short',this)"><span class="pill-dot" style="background:var(--accent);"></span>Short-form</button>
+            <button class="provider-pill" id="opt-long" onclick="setContentType('long',this)"><span class="pill-dot" style="background:var(--green);"></span>Long-form</button>
+          </div>
+          <div id="content-type-hint" style="font-size:10px;color:var(--ink3);margin-top:6px;">Threads, tweets, social posts</div>
         </div>
-        <div id="content-type-hint" style="font-size:10px;color:var(--ink3);margin-top:6px;">Threads, tweets, social posts</div>
+        <div class="field-gap">
+          <div class="opt-label">Language</div>
+          <select id="opt-language">
+            <option value="English">English</option>
+            <option value="Arabic">Arabic</option>
+            <option value="Svenska">Svenska</option>
+            <option value="Indonesia">Indonesia</option>
+            <option value="Melayu">Melayu</option>
+            <option value="Germany">Germany</option>
+          </select>
+        </div>
+        <div class="field-gap" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="opt-repetitive" style="width:auto;margin:0;">
+          <label for="opt-repetitive" style="font-size:12px;color:var(--ink2);cursor:pointer;">Extract top 5 sentences (>10x)</label>
+        </div>
       </div>
       <div class="btn-row">
         <button class="btn-generate" id="generate-btn" onclick="generate()">
@@ -928,10 +944,10 @@
   </div>
   <div class="toast" id="toast"></div>
   <script>
-    const PROVIDERS = { anthropic: { hint: 'Key stays in your browser. Never stored or forwarded.', placeholder: 'sk-ant-api03-…', models: [{ id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (recommended)' }, { id: 'claude-opus-4-20250514', label: 'Claude Opus 4' }, { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (fast)' }] }, gemini: { hint: 'Get your key at aistudio.google.com/apikey', placeholder: 'AIza…', models: [{ id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (recommended)' }, { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite (fast)' }, { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }] }, openai: { hint: 'Get your key at platform.openai.com', placeholder: 'sk-proj-…', models: [{ id: 'gpt-5-mini', label: 'GPT-5 Mini' }] }, deepseek: { hint: 'Get your key at platform.deepseek.com', placeholder: 'sk-…', models: [{ id: 'deepseek-chat', label: 'DeepSeek V3 (recommended)' }, { id: 'deepseek-reasoner', label: 'DeepSeek R1 (reasoning)' }] }, kimi: { hint: 'Get your key at platform.moonshot.cn', placeholder: 'sk-…', models: [{ id: 'moonshot-v1-auto', label: 'Kimi V1 Auto' }, { id: 'moonshot-v1-128k', label: 'Kimi V2.5 (128k)' }] }, openrouter: { hint: 'Get your key at openrouter.ai/keys', placeholder: 'sk-or-v1-…', models: [{ id: 'openai/gpt-5-mini', label: 'GPT-5 Mini (via OR)' }, { id: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (via OR)' }, { id: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash (via OR)' }, { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (via OR)' }, { id: 'openai/o3-mini', label: 'o3-mini (via OR)' }, { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (via OR)' }] } };
+    const PROVIDERS = { gemini: { hint: 'Get your key at aistudio.google.com/apikey', placeholder: 'AIza…', models: [{ id: 'gemini-3-flash-preview', label: 'Gemini 3.1 Flash-Lite Preview' }, { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }] }, openai: { hint: 'Get your key at platform.openai.com', placeholder: 'sk-proj-…', models: [{ id: 'gpt-5-mini', label: 'GPT-5 Mini' }] }, deepseek: { hint: 'Get your key at platform.deepseek.com', placeholder: 'sk-…', models: [{ id: 'deepseek-chat', label: 'DeepSeek V3 (recommended)' }, { id: 'deepseek-reasoner', label: 'DeepSeek R1 (reasoning)' }] }, kimi: { hint: 'Get your key at platform.moonshot.ai', placeholder: 'sk-…', models: [{ id: 'moonshot-v1-auto', label: 'Kimi V1 Auto' }, { id: 'moonshot-v1-128k', label: 'Kimi V2.5 (128k)' }] }, openrouter: { hint: 'Get your key at openrouter.ai/keys', placeholder: 'sk-or-v1-…', models: [{ id: 'openai/gpt-5-mini', label: 'GPT-5 Mini (via OR)' }, { id: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (via OR)' }, { id: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash (via OR)' }, { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (via OR)' }, { id: 'openai/o3-mini', label: 'o3-mini (via OR)' }, { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (via OR)' }] } };
     const WORDS_PER_CHUNK = 3000, DIRECT_WORD_THRESHOLD = 2500;
-    let currentProvider = 'anthropic', rawMarkdown = '', activeTab = 'rendered', uploadedFiles = [], abortRequested = false, contentType = 'short';
-    setProvider('anthropic', document.querySelector('.provider-pill'));
+    let currentProvider = 'gemini', rawMarkdown = '', activeTab = 'rendered', uploadedFiles = [], abortRequested = false, contentType = 'short';
+    setProvider('gemini', document.querySelector('.provider-pill'));
     function setContentType(type, btn) { contentType = type; document.querySelectorAll('#opt-short,#opt-long').forEach(p => p.classList.remove('active')); btn.classList.add('active'); document.getElementById('content-type-hint').textContent = type === 'short' ? 'Threads, tweets, social posts' : 'Articles, essays, blog posts'; }
     function setProvider(name, btn) { currentProvider = name; document.querySelectorAll('.provider-pill:not(#opt-short):not(#opt-long)').forEach(p => p.classList.remove('active')); btn.classList.add('active'); const cfg = PROVIDERS[name]; document.getElementById('api-key').placeholder = cfg.placeholder; document.getElementById('key-hint').textContent = cfg.hint; document.getElementById('model-select').innerHTML = cfg.models.map(m => `<option value="${m.id}">${m.label}</option>`).join(''); }
     function handleFiles(input) { for (const file of input.files) { if (uploadedFiles.some(f => f.name === file.name)) continue; const r = new FileReader(); r.onload = e => { uploadedFiles.push({ name: file.name, text: e.target.result }); renderFileList(); updateCount(); }; r.readAsText(file); } input.value = ''; }
@@ -1180,6 +1196,7 @@ OUTPUT STRUCTURE — follow this skeleton exactly. Replace every [bracketed plac
 ## Negative Prompt — NEVER Use These
 
 ### Banned Phrases (generic AI / corporate / academic)
+[Keep these exact concepts banned, but TRANSLATE them into the target language requested for this rulebook.]
 - "In conclusion"
 - "It's important to note"
 - "Delve into" / "delve deeper"
@@ -1200,7 +1217,7 @@ OUTPUT STRUCTURE — follow this skeleton exactly. Replace every [bracketed plac
 - "It goes without saying"
 - "Without further ado"
 - "It begs the question"
-[Add every additional phrase confirmed absent from this specific corpus.]
+[Add every additional phrase confirmed absent from this specific corpus, in the target language.]
 
 ### Banned Styles
 - **[Style label].** [Specific behaviours this bans — precise, not vague.]
@@ -1229,19 +1246,32 @@ RULES FOR FILLING IN THE TEMPLATE:
 - The How to Apply steps must be tailored to this specific voice, not generic.
 `;
 
+    function getStructureTemplate(opts) {
+      if (opts.repetitive) {
+        return STRUCTURE_TEMPLATE + `
+
+### Repetitive Sentences
+- "[Exact sentence string from text]" (Appeared [N] times)
+[Extract exactly the top 5 sentences that appear unmodified more than 10 times in the source. If fewer than 5 exist, list only those. If none exist, omit this section.]`;
+      }
+      return STRUCTURE_TEMPLATE;
+    }
+
     function bSynthPrompt(reports, totalWords, opts) {
-      const { contentType: ct } = opts;
+      const { contentType: ct, language, repetitive } = opts;
       const ctI = ct === 'short'
         ? 'The source material is SHORT-FORM content (threads, tweets, social posts). The rulebook should focus on punchy openings, thread hooks, line-break pacing, and social-native vocabulary. Optimize rules for generating short-form posts and threads.'
         : 'The source material is LONG-FORM content (articles, essays, blog posts). The rulebook should focus on paragraph structure, section transitions, argument development, and sustained narrative voice. Optimize rules for generating articles and long-form pieces.';
+      const langI = `The final rulebook MUST be written entirely in ${language}.`;
       return `You are synthesizing ${reports.length} style analysis reports covering ~${totalWords.toLocaleString()} words by the same author. Your goal is one authoritative Voice Rulebook that captures everything needed to replicate this writing style exactly.
 
 This rulebook will be pasted directly into an AI system prompt as a style constraint. Write every rule as a hard, unambiguous command: "Do X", "Never Y", "Always Z". Rules must be specific enough that an AI applies them mechanically — no interpretation required.
 ${ctI}
+${langI}
 Density: 7-10 rules per sub-section — exhaustive, with edge cases, specific word lists, and counterexamples.
 Cross-batch weighting: a pattern appearing in most batches = core rule. A pattern in only one batch = omit unless highly distinctive.
 
-${STRUCTURE_TEMPLATE}
+${getStructureTemplate(opts)}
 
 ---
 PATTERN REPORTS (${reports.length} batches × ~${WORDS_PER_CHUNK} words each):
@@ -1250,17 +1280,19 @@ ${reports.map((r, i) => `=== BATCH ${i + 1} ===\n${r}`).join('\n\n')}`;
     }
 
     function bDirectPrompt(text, opts) {
-      const { contentType: ct } = opts;
+      const { contentType: ct, language, repetitive } = opts;
       const ctI = ct === 'short'
         ? 'The source material is SHORT-FORM content (threads, tweets, social posts). The rulebook should focus on punchy openings, thread hooks, line-break pacing, and social-native vocabulary. Optimize rules for generating short-form posts and threads.'
         : 'The source material is LONG-FORM content (articles, essays, blog posts). The rulebook should focus on paragraph structure, section transitions, argument development, and sustained narrative voice. Optimize rules for generating articles and long-form pieces.';
+      const langI = `The final rulebook MUST be written entirely in ${language}.`;
       return `You are a writing style analyst. Your goal is one authoritative Voice Rulebook that captures everything needed to replicate this writing style exactly.
 
 This rulebook will be pasted directly into an AI system prompt as a style constraint. Write every rule as a hard, unambiguous command: "Do X", "Never Y", "Always Z". Rules must be specific enough that an AI applies them mechanically — no interpretation required.
 ${ctI}
+${langI}
 Density: 7-10 rules per sub-section — exhaustive, with edge cases and specific word lists.
 
-${STRUCTURE_TEMPLATE}
+${getStructureTemplate(opts)}
 
 ---
 WRITING SAMPLES:
@@ -1268,12 +1300,11 @@ ${text}`;
     }
 
     async function callQuiet(key, model, prompt) { let r = ''; await callStream(key, model, prompt, t => { r += t; }, 1400); return r; }
-    async function callStream(key, model, prompt, onChunk, maxTok = 2400) { const fetchers = { anthropic: fetchAnthropic, gemini: fetchGemini, openai: fetchOpenAI, deepseek: fetchDeepSeek, kimi: fetchKimi, openrouter: fetchOpenRouter }; await fetchers[currentProvider](key, model, prompt, onChunk, maxTok); }
+    async function callStream(key, model, prompt, onChunk, maxTok = 2400) { const fetchers = { gemini: fetchGemini, openai: fetchOpenAI, deepseek: fetchDeepSeek, kimi: fetchKimi, openrouter: fetchOpenRouter }; await fetchers[currentProvider](key, model, prompt, onChunk, maxTok); }
     async function fetchOpenAI(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
-    async function fetchAnthropic(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { if (evt.type === 'content_block_delta' && evt.delta?.text) onChunk(evt.delta.text); }); }
     async function fetchGemini(key, model, prompt, onChunk, maxTok) { const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${key}&alt=sse`; const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTok } }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.candidates?.[0]?.content?.parts?.[0]?.text; if (t) onChunk(t); }); }
     async function fetchDeepSeek(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.deepseek.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
-    async function fetchKimi(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.moonshot.cn/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
+    async function fetchKimi(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.moonshot.ai/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
     async function fetchOpenRouter(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}`, 'HTTP-Referer': window.location.href, 'X-Title': 'Rulebook Generator' }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
     async function readSSE(res, handler) { const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = ''; while (true) { const { done, value } = await reader.read(); if (done) break; if (abortRequested) { reader.cancel(); throw new Error('Cancelled'); } buf += dec.decode(value, { stream: true }); const lines = buf.split('\n'); buf = lines.pop(); for (const line of lines) { if (!line.startsWith('data: ')) continue; const data = line.slice(6).trim(); if (!data || data === '[DONE]') continue; try { handler(JSON.parse(data)); } catch { } } } }
     function setStatus(html) { const el = document.getElementById('rulebook-rendered'); el.innerHTML = html; el.style.display = 'block'; document.getElementById('rulebook-raw').style.display = 'none'; }
@@ -1287,7 +1318,11 @@ ${text}`;
       abortRequested = false;
       const totalWords = wordCount(text);
       const model = document.getElementById('model-select').value;
-      const opts = { contentType };
+      const opts = {
+        contentType,
+        language: document.getElementById('opt-language').value,
+        repetitive: document.getElementById('opt-repetitive').checked
+      };
       const btn = document.getElementById('generate-btn');
       const cBtn = document.getElementById('cancel-btn');
       btn.classList.add('loading'); btn.disabled = true; cBtn.style.display = 'inline-flex';
