@@ -945,7 +945,7 @@
   <div class="toast" id="toast"></div>
   <script>
     const PROVIDERS = { gemini: { hint: 'Get your key at aistudio.google.com/apikey', placeholder: 'AIza…', models: [{ id: 'gemini-3-flash-preview', label: 'Gemini 3.1 Flash-Lite Preview' }, { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }] }, openai: { hint: 'Get your key at platform.openai.com', placeholder: 'sk-proj-…', models: [{ id: 'gpt-5-mini', label: 'GPT-5 Mini' }] }, deepseek: { hint: 'Get your key at platform.deepseek.com', placeholder: 'sk-…', models: [{ id: 'deepseek-chat', label: 'DeepSeek V3 (recommended)' }, { id: 'deepseek-reasoner', label: 'DeepSeek R1 (reasoning)' }] }, kimi: { hint: 'Get your key at platform.moonshot.ai', placeholder: 'sk-…', models: [{ id: 'moonshot-v1-auto', label: 'Kimi V1 Auto' }, { id: 'moonshot-v1-128k', label: 'Kimi V2.5 (128k)' }] }, openrouter: { hint: 'Get your key at openrouter.ai/keys', placeholder: 'sk-or-v1-…', models: [{ id: 'openai/gpt-5-mini', label: 'GPT-5 Mini (via OR)' }, { id: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (via OR)' }, { id: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash (via OR)' }, { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (via OR)' }, { id: 'openai/o3-mini', label: 'o3-mini (via OR)' }, { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (via OR)' }] } };
-    const WORDS_PER_CHUNK = 3000, DIRECT_WORD_THRESHOLD = 2500;
+    const WORDS_PER_CHUNK = 180000, DIRECT_WORD_THRESHOLD = 150000;
     let currentProvider = 'gemini', rawMarkdown = '', activeTab = 'rendered', uploadedFiles = [], abortRequested = false, contentType = 'short';
     setProvider('gemini', document.querySelector('.provider-pill'));
     function setContentType(type, btn) { contentType = type; document.querySelectorAll('#opt-short,#opt-long').forEach(p => p.classList.remove('active')); btn.classList.add('active'); document.getElementById('content-type-hint').textContent = type === 'short' ? 'Threads, tweets, social posts' : 'Articles, essays, blog posts'; }
@@ -1299,8 +1299,8 @@ WRITING SAMPLES:
 ${text}`;
     }
 
-    async function callQuiet(key, model, prompt) { let r = ''; await callStream(key, model, prompt, t => { r += t; }, 1400); return r; }
-    async function callStream(key, model, prompt, onChunk, maxTok = 2400) { const fetchers = { gemini: fetchGemini, openai: fetchOpenAI, deepseek: fetchDeepSeek, kimi: fetchKimi, openrouter: fetchOpenRouter }; await fetchers[currentProvider](key, model, prompt, onChunk, maxTok); }
+    async function callQuiet(key, model, prompt) { let r = ''; await callStream(key, model, prompt, t => { r += t; }, 4000); return r; }
+    async function callStream(key, model, prompt, onChunk, maxTok = 8000) { const fetchers = { gemini: fetchGemini, openai: fetchOpenAI, deepseek: fetchDeepSeek, kimi: fetchKimi, openrouter: fetchOpenRouter }; await fetchers[currentProvider](key, model, prompt, onChunk, maxTok); }
     async function fetchOpenAI(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
     async function fetchGemini(key, model, prompt, onChunk, maxTok) { const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${key}&alt=sse`; const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTok } }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.candidates?.[0]?.content?.parts?.[0]?.text; if (t) onChunk(t); }); }
     async function fetchDeepSeek(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.deepseek.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
@@ -1335,7 +1335,7 @@ ${text}`;
           document.getElementById('progress-bar').classList.add('active', 'streaming');
           setStatus(`<span style="color:var(--ink3);font-size:12px;font-style:italic;">Analyzing ${totalWords.toLocaleString()} words<span class="cursor"></span></span>`);
           const onC = t => { rawMarkdown += t; if (activeTab === 'raw') document.getElementById('rulebook-raw').textContent = rawMarkdown + '▌'; };
-          await callStream(key, model, bDirectPrompt(text, opts), onC, 4000);
+          await callStream(key, model, bDirectPrompt(text, opts), onC, 8000);
           document.getElementById('progress-bar').classList.remove('streaming');
         } else {
           const chunks = chunkByWords(text, WORDS_PER_CHUNK);
@@ -1350,7 +1350,7 @@ ${text}`;
           setPct(76);
           setStatus(`<div style="padding:4px 0;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:10px;">Pass 2 of 2 — Synthesis</div><div style="font-size:13px;color:var(--ink2);margin-bottom:14px;">Merging <strong>${chunks.length} pattern reports</strong> · <strong>${totalWords.toLocaleString()} words</strong><span class="cursor"></span></div><div class="batch-grid">${gridHTML(chunks.length, -1, chunks.length)}</div><div style="font-size:11px;color:var(--ink3);margin-top:10px;">Weighing patterns by cross-batch frequency…</div></div>`);
           const onC = t => { rawMarkdown += t; if (activeTab === 'raw') document.getElementById('rulebook-raw').textContent = rawMarkdown + '▌'; setPct(Math.min(98, 76 + rawMarkdown.length / 100)); };
-          await callStream(key, model, bSynthPrompt(reports, totalWords, opts), onC, 4000);
+          await callStream(key, model, bSynthPrompt(reports, totalWords, opts), onC, 8000);
           setPct(100);
         }
         renderOutput();
