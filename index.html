@@ -214,6 +214,73 @@
       margin-top: 11px;
     }
 
+    .model-config {
+      min-height: 86px;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .mini-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-inline {
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--ink2);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 6px 9px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-inline:hover {
+      border-color: var(--ink2);
+      color: var(--ink);
+    }
+
+    .provider-settings {
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: var(--paper2);
+    }
+
+    .check-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 10px;
+      color: var(--ink2);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .check-line input {
+      margin-top: 2px;
+    }
+
+    .inline-note {
+      font-size: 10px;
+      color: var(--ink3);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .request-status {
+      margin: 0 22px 16px;
+      font-size: 10px;
+      color: var(--ink3);
+      min-height: 15px;
+    }
+
     .upload-zone {
       border: 1px dashed var(--rule);
       border-radius: var(--radius);
@@ -796,25 +863,49 @@
       <div class="section">
         <div class="label">Provider</div>
         <div class="provider-pills">
-          <button class="provider-pill active" onclick="setProvider('anthropic',this)"><span class="pill-dot"
-              style="background:#c85a2a;"></span>Anthropic</button>
-          <button class="provider-pill" onclick="setProvider('gemini',this)"><span class="pill-dot"
-              style="background:#4285f4;"></span>Gemini</button>
-          <button class="provider-pill" onclick="setProvider('deepseek',this)"><span class="pill-dot"
-              style="background:#2d8a8a;"></span>DeepSeek</button>
-          <button class="provider-pill" onclick="setProvider('kimi',this)"><span class="pill-dot"
-              style="background:#000000;"></span>Kimi</button>
-          <button class="provider-pill" onclick="setProvider('openrouter',this)"><span class="pill-dot"
+          <button class="provider-pill active" data-provider="direct" onclick="setProvider('direct',this)"><span class="pill-dot"
+              style="background:#0f766e;"></span>Direct API</button>
+          <button class="provider-pill" data-provider="openrouter" onclick="setProvider('openrouter',this)"><span class="pill-dot"
               style="background:#8b5cf6;"></span>OpenRouter</button>
         </div>
         <div class="field-gap">
-          <div class="opt-label">Model</div><select id="model-select"></select>
+          <div class="opt-label">Model</div><select id="model-select" aria-label="Model"></select>
+          <input type="text" id="custom-model" class="field-gap" placeholder="Custom model identifier (optional)"
+            aria-label="Custom model identifier">
+          <div class="inline-note">Model identifiers are treated as configurable strings.</div>
+        </div>
+        <div class="field-gap">
+          <div class="opt-label">Default model list (one per line)</div>
+          <textarea id="model-config" class="model-config"
+            placeholder="gpt-astra-6&#10;opus-5.5&#10;glm-5.3"></textarea>
+          <div class="mini-row">
+            <button class="btn-inline" type="button" onclick="applyModelList(true)">Apply list</button>
+            <button class="btn-inline" type="button" onclick="resetModelList()">Reset default</button>
+          </div>
+        </div>
+        <div class="field-gap provider-settings" id="direct-settings">
+          <div class="opt-label">Direct API Base URL</div>
+          <input type="text" id="direct-base-url" placeholder="https://api.openai.com/v1/chat/completions"
+            aria-label="Direct API Base URL">
+        </div>
+        <div class="field-gap provider-settings" id="openrouter-settings" style="display:none;">
+          <div class="opt-label">OpenRouter Endpoint</div>
+          <input type="text" id="openrouter-endpoint" placeholder="https://openrouter.ai/api/v1/chat/completions"
+            aria-label="OpenRouter Endpoint">
+          <div class="opt-label field-gap">OpenRouter App URL (optional)</div>
+          <input type="text" id="openrouter-app-url" placeholder="https://example.com" aria-label="OpenRouter App URL">
+          <div class="opt-label field-gap">OpenRouter App Name (optional)</div>
+          <input type="text" id="openrouter-app-name" placeholder="Rulebook Generator" aria-label="OpenRouter App Name">
         </div>
         <div class="field-gap">
           <div class="opt-label">API Key</div>
           <div class="key-wrap"><input type="password" id="api-key" autocomplete="off"><button class="key-toggle"
               onclick="toggleKey()">Show</button></div>
           <div id="key-hint" style="font-size:10px;color:var(--ink3);margin-top:5px;"></div>
+          <label class="check-line"><input type="checkbox" id="remember-key"> Remember API key in this browser
+            (localStorage)</label>
+          <label class="check-line"><input type="checkbox" id="mock-mode"> Mock mode (run without API request)</label>
+          <div class="inline-note">For static frontend apps, browser-stored keys can be exposed on this device.</div>
         </div>
       </div>
       <div class="section">
@@ -873,6 +964,7 @@
         </button>
         <button class="btn-cancel" id="cancel-btn" onclick="cancelGeneration()">Cancel</button>
       </div>
+      <div class="request-status" id="request-status" role="status" aria-live="polite"></div>
     </div>
     <div class="panel-right">
       <div class="output-header">
@@ -902,11 +994,123 @@
   </div>
   <div class="toast" id="toast"></div>
   <script>
-    const PROVIDERS = { anthropic: { hint: 'Key stays in your browser. Never stored or forwarded.', placeholder: 'sk-ant-api03-…', models: [{ id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (recommended)' }, { id: 'claude-opus-4-20250514', label: 'Claude Opus 4' }, { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (fast)' }] }, gemini: { hint: 'Get your key at aistudio.google.com/apikey', placeholder: 'AIza…', models: [{ id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (recommended)' }, { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite (fast)' }, { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' }] }, deepseek: { hint: 'Get your key at platform.deepseek.com', placeholder: 'sk-…', models: [{ id: 'deepseek-chat', label: 'DeepSeek V3 (recommended)' }, { id: 'deepseek-reasoner', label: 'DeepSeek R1 (reasoning)' }] }, kimi: { hint: 'Get your key at platform.moonshot.cn', placeholder: 'sk-…', models: [{ id: 'moonshot-v1-auto', label: 'Moonshot V1 (Auto)' }, { id: 'moonshot-v1-128k', label: 'Moonshot V1 (128k)' }] }, openrouter: { hint: 'Get your key at openrouter.ai/keys', placeholder: 'sk-or-v1-…', models: [{ id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (via OR)' }, { id: 'openai/o3-mini', label: 'o3-mini (via OR)' }, { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro (via OR)' }, { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (via OR)' }] } };
+    const PROVIDERS = {
+      direct: { hint: 'Direct API: provide your endpoint URL, API key, and model.', placeholder: 'sk-…' },
+      openrouter: { hint: 'OpenRouter: get your key at openrouter.ai/keys.', placeholder: 'sk-or-v1-…' }
+    };
+    const DEFAULT_MODEL_LIST = ['gpt-astra-6', 'opus-5.5', 'glm-5.3'];
+    const SETTINGS_KEY = 'rulebook_settings_v2';
     const CHUNK_SIZE = 80, DIRECT_THRESHOLD = 60;
-    let currentProvider = 'anthropic', rawMarkdown = '', activeTab = 'rendered', fileContent = '', abortRequested = false;
-    setProvider('anthropic', document.querySelector('.provider-pill'));
-    function setProvider(name, btn) { currentProvider = name; document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active')); btn.classList.add('active'); const cfg = PROVIDERS[name]; document.getElementById('api-key').placeholder = cfg.placeholder; document.getElementById('key-hint').textContent = cfg.hint; document.getElementById('model-select').innerHTML = cfg.models.map(m => `<option value="${m.id}">${m.label}</option>`).join(''); }
+    let currentProvider = 'direct', rawMarkdown = '', activeTab = 'rendered', fileContent = '', abortRequested = false;
+    initSettingsUI();
+
+    function defaultSettings() {
+      return {
+        provider: 'direct',
+        modelList: DEFAULT_MODEL_LIST.join('\n'),
+        selectedModel: DEFAULT_MODEL_LIST[0],
+        customModel: '',
+        directBaseUrl: 'https://api.openai.com/v1/chat/completions',
+        openrouterEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        openrouterAppUrl: window.location.origin || '',
+        openrouterAppName: 'Rulebook Generator',
+        rememberKey: false,
+        apiKey: '',
+        mockMode: false
+      };
+    }
+
+    function loadSettings() {
+      const defaults = defaultSettings();
+      try {
+        const parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+        return { ...defaults, ...parsed };
+      } catch {
+        return defaults;
+      }
+    }
+
+    function saveSettings() {
+      const settings = {
+        provider: currentProvider,
+        modelList: document.getElementById('model-config').value,
+        selectedModel: document.getElementById('model-select').value,
+        customModel: document.getElementById('custom-model').value.trim(),
+        directBaseUrl: document.getElementById('direct-base-url').value.trim(),
+        openrouterEndpoint: document.getElementById('openrouter-endpoint').value.trim(),
+        openrouterAppUrl: document.getElementById('openrouter-app-url').value.trim(),
+        openrouterAppName: document.getElementById('openrouter-app-name').value.trim(),
+        rememberKey: document.getElementById('remember-key').checked,
+        apiKey: document.getElementById('remember-key').checked ? document.getElementById('api-key').value.trim() : '',
+        mockMode: document.getElementById('mock-mode').checked
+      };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    function parseModelList(raw) {
+      return [...new Set((raw || '').split(/\n|,/).map(v => v.trim()).filter(Boolean))].slice(0, 120);
+    }
+
+    function applyModelList(showSuccess) {
+      const models = parseModelList(document.getElementById('model-config').value);
+      if (!models.length) {
+        showToast('Model list cannot be empty');
+        return false;
+      }
+      const select = document.getElementById('model-select');
+      const previous = select.value || models[0];
+      select.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+      select.value = models.includes(previous) ? previous : models[0];
+      saveSettings();
+      if (showSuccess) showToast('Model list updated');
+      return true;
+    }
+
+    function resetModelList() {
+      document.getElementById('model-config').value = DEFAULT_MODEL_LIST.join('\n');
+      applyModelList(true);
+    }
+
+    function initSettingsUI() {
+      const settings = loadSettings();
+      currentProvider = settings.provider === 'openrouter' ? 'openrouter' : 'direct';
+      document.getElementById('model-config').value = settings.modelList || DEFAULT_MODEL_LIST.join('\n');
+      document.getElementById('custom-model').value = settings.customModel || '';
+      document.getElementById('direct-base-url').value = settings.directBaseUrl || '';
+      document.getElementById('openrouter-endpoint').value = settings.openrouterEndpoint || '';
+      document.getElementById('openrouter-app-url').value = settings.openrouterAppUrl || '';
+      document.getElementById('openrouter-app-name').value = settings.openrouterAppName || '';
+      document.getElementById('remember-key').checked = !!settings.rememberKey;
+      document.getElementById('mock-mode').checked = !!settings.mockMode;
+      document.getElementById('api-key').value = settings.rememberKey ? (settings.apiKey || '') : '';
+      applyModelList(false);
+      const modelSelect = document.getElementById('model-select');
+      if (settings.selectedModel) modelSelect.value = settings.selectedModel;
+      const providerBtn = document.querySelector(`.provider-pill[data-provider="${currentProvider}"]`) || document.querySelector('.provider-pill');
+      setProvider(currentProvider, providerBtn);
+      ['model-select', 'custom-model', 'direct-base-url', 'openrouter-endpoint', 'openrouter-app-url', 'openrouter-app-name', 'remember-key', 'mock-mode'].forEach(id => {
+        document.getElementById(id).addEventListener('change', saveSettings);
+      });
+      document.getElementById('api-key').addEventListener('change', saveSettings);
+    }
+
+    function setProvider(name, btn) {
+      currentProvider = name;
+      document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      const cfg = PROVIDERS[name];
+      document.getElementById('api-key').placeholder = cfg.placeholder;
+      document.getElementById('key-hint').textContent = cfg.hint;
+      document.getElementById('direct-settings').style.display = name === 'direct' ? 'block' : 'none';
+      document.getElementById('openrouter-settings').style.display = name === 'openrouter' ? 'block' : 'none';
+      saveSettings();
+    }
+
+    function setRequestStatus(message, isError = false) {
+      const el = document.getElementById('request-status');
+      el.textContent = message;
+      el.style.color = isError ? '#8b3520' : 'var(--ink3)';
+    }
     function handleFile(input) { const file = input.files[0]; if (!file) return; const r = new FileReader(); r.onload = e => { fileContent = e.target.result; document.getElementById('file-name').textContent = '✓ ' + file.name; document.getElementById('file-name').style.display = 'block'; document.getElementById('tweet-paste').value = ''; updateCount(); }; r.readAsText(file); }
     const zone = document.getElementById('upload-zone');
     zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
@@ -1236,38 +1440,145 @@ TWEETS:
 ${tweets}`;
     }
 
-    async function callQuiet(key, model, prompt) { let r = ''; await callStream(key, model, prompt, t => { r += t; }, 1400); return r; }
-    async function callStream(key, model, prompt, onChunk, maxTok = 2400) { const fetchers = { anthropic: fetchAnthropic, gemini: fetchGemini, deepseek: fetchDeepSeek, kimi: fetchKimi, openrouter: fetchOpenRouter }; await fetchers[currentProvider](key, model, prompt, onChunk, maxTok); }
-    async function fetchAnthropic(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { if (evt.type === 'content_block_delta' && evt.delta?.text) onChunk(evt.delta.text); }); }
-    async function fetchGemini(key, model, prompt, onChunk, maxTok) { const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${key}&alt=sse`; const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTok } }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.candidates?.[0]?.content?.parts?.[0]?.text; if (t) onChunk(t); }); }
-    async function fetchDeepSeek(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.deepseek.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
-    async function fetchKimi(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://api.moonshot.cn/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
-    async function fetchOpenRouter(key, model, prompt, onChunk, maxTok) { const res = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}`, 'HTTP-Referer': window.location.href, 'X-Title': 'Rulebook Generator' }, body: JSON.stringify({ model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }) }); if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); } await readSSE(res, evt => { const t = evt.choices?.[0]?.delta?.content; if (t) onChunk(t); }); }
+    function isValidHttpUrl(value) {
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+      } catch {
+        return false;
+      }
+    }
+
+    function collectRuntimeConfig() {
+      const useCustomModel = document.getElementById('custom-model').value.trim();
+      const selectedModel = useCustomModel || document.getElementById('model-select').value.trim();
+      return {
+        provider: currentProvider,
+        apiKey: document.getElementById('api-key').value.trim(),
+        model: selectedModel,
+        directBaseUrl: document.getElementById('direct-base-url').value.trim(),
+        openrouterEndpoint: document.getElementById('openrouter-endpoint').value.trim(),
+        openrouterAppUrl: document.getElementById('openrouter-app-url').value.trim(),
+        openrouterAppName: document.getElementById('openrouter-app-name').value.trim(),
+        mockMode: document.getElementById('mock-mode').checked
+      };
+    }
+
+    function validateRuntimeConfig(cfg) {
+      if (!cfg.model) return 'Choose or enter a model identifier.';
+      if (cfg.provider === 'direct' && !isValidHttpUrl(cfg.directBaseUrl)) return 'Direct API base URL must be a valid http(s) URL.';
+      if (cfg.provider === 'openrouter' && !isValidHttpUrl(cfg.openrouterEndpoint)) return 'OpenRouter endpoint must be a valid http(s) URL.';
+      if (!cfg.mockMode && !cfg.apiKey) return 'Enter an API key or enable mock mode.';
+      return null;
+    }
+
+    function buildProviderRequest(cfg, prompt, maxTok) {
+      if (cfg.provider === 'direct') {
+        return {
+          providerLabel: 'Direct API',
+          url: cfg.directBaseUrl,
+          headers: { 'Content-Type': 'application/json', 'Authorization': ['Bearer', cfg.apiKey].join(' ') },
+          body: { model: cfg.model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }
+        };
+      }
+      const headers = { 'Content-Type': 'application/json', 'Authorization': ['Bearer', cfg.apiKey].join(' ') };
+      if (cfg.openrouterAppUrl) headers['HTTP-Referer'] = cfg.openrouterAppUrl;
+      if (cfg.openrouterAppName) headers['X-Title'] = cfg.openrouterAppName;
+      return {
+        providerLabel: 'OpenRouter',
+        url: cfg.openrouterEndpoint,
+        headers,
+        body: { model: cfg.model, max_tokens: maxTok, stream: true, messages: [{ role: 'user', content: prompt }] }
+      };
+    }
+
+    async function parseErrorResponse(res) {
+      const text = await res.text();
+      if (!text) return `HTTP ${res.status}`;
+      try {
+        const parsed = JSON.parse(text);
+        return parsed.error?.message || parsed.message || parsed.detail || text;
+      } catch {
+        return text.length > 320 ? text.slice(0, 320) + '…' : text;
+      }
+    }
+
+    async function callQuiet(cfg, prompt) {
+      let r = '';
+      await callStream(cfg, prompt, t => { r += t; }, 1400);
+      return r;
+    }
+
+    async function callStream(cfg, prompt, onChunk, maxTok = 2400) {
+      const req = buildProviderRequest(cfg, prompt, maxTok);
+      const res = await fetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body) });
+      if (!res.ok) {
+        const msg = await parseErrorResponse(res);
+        throw new Error(`${req.providerLabel} request failed (${res.status}): ${msg}`);
+      }
+      await readSSE(res, evt => {
+        const t = evt.choices?.[0]?.delta?.content;
+        if (t) onChunk(t);
+      });
+    }
+
+    async function runMockGeneration(arr, opts) {
+      document.getElementById('progress-bar').classList.add('active', 'streaming');
+      setRequestStatus('Mock mode enabled — generating local sample output.');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      rawMarkdown = `# Voice Rulebook
+
+Mock mode output generated locally for ${arr.length} tweets.
+
+---
+
+## 1. Sentence Structure
+
+### Dominant Type
+- **Mixed.** Use this mode to verify UI and rendering without API credentials.
+- Keep identifiers configurable: \`${document.getElementById('custom-model').value.trim() || document.getElementById('model-select').value}\`.
+
+## 2. Notes
+- Provider selected: **${currentProvider}**
+- Depth option: **${opts.depth}**
+- Output mode: **${opts.output}**
+
+## Negative Prompt — NEVER Use These
+- This is mock output only; replace with real provider call when API key is available.
+`;
+      document.getElementById('progress-bar').classList.remove('streaming');
+    }
+
     async function readSSE(res, handler) { const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = ''; while (true) { const { done, value } = await reader.read(); if (done) break; if (abortRequested) { reader.cancel(); throw new Error('Cancelled'); } buf += dec.decode(value, { stream: true }); const lines = buf.split('\n'); buf = lines.pop(); for (const line of lines) { if (!line.startsWith('data: ')) continue; const data = line.slice(6).trim(); if (!data || data === '[DONE]') continue; try { handler(JSON.parse(data)); } catch { } } } }
     function setStatus(html) { const el = document.getElementById('rulebook-rendered'); el.innerHTML = html; el.style.display = 'block'; document.getElementById('rulebook-raw').style.display = 'none'; }
     function setPct(p) { const pb = document.getElementById('progress-bar'); pb.classList.remove('streaming'); pb.classList.add('active'); document.getElementById('progress-fill').style.width = p + '%'; }
     function gridHTML(done, active, total) { return Array.from({ length: total }, (_, i) => `<div class="batch-cell ${i < done ? 'done' : i === active ? 'active' : ''}"></div>`).join(''); }
     async function generate() {
-      const key = document.getElementById('api-key').value.trim();
-      if (!key) { showToast('Enter your API key'); return; }
       const arr = parseTweetArray();
       if (!arr || arr.length === 0) { showToast('Provide tweets via file upload or paste'); return; }
+      if (!applyModelList(false)) return;
+      const cfg = collectRuntimeConfig();
+      const validationError = validateRuntimeConfig(cfg);
+      if (validationError) { showToast(validationError); setRequestStatus(validationError, true); return; }
+      saveSettings();
       abortRequested = false;
-      const model = document.getElementById('model-select').value;
       const opts = { depth: document.getElementById('opt-depth').value, format: document.getElementById('opt-format').value, focus: document.getElementById('opt-focus').value, output: document.getElementById('opt-output').value };
       const btn = document.getElementById('generate-btn');
       const cBtn = document.getElementById('cancel-btn');
       btn.classList.add('loading'); btn.disabled = true; cBtn.style.display = 'inline-flex';
+      setRequestStatus(cfg.mockMode ? 'Mock mode is running.' : `Sending request via ${cfg.provider === 'direct' ? 'Direct API' : 'OpenRouter'}…`);
       document.getElementById('empty-state').style.display = 'none';
       document.getElementById('rulebook-rendered').style.display = 'block';
       document.getElementById('rulebook-raw').style.display = 'none';
       rawMarkdown = '';
       try {
-        if (arr.length <= DIRECT_THRESHOLD) {
+        if (cfg.mockMode) {
+          await runMockGeneration(arr, opts);
+        } else if (arr.length <= DIRECT_THRESHOLD) {
           document.getElementById('progress-bar').classList.add('active', 'streaming');
           setStatus(`<span style="color:var(--ink3);font-size:12px;font-style:italic;">Analyzing ${arr.length} tweets<span class="cursor"></span></span>`);
           const onC = t => { rawMarkdown += t; if (activeTab === 'raw') document.getElementById('rulebook-raw').textContent = rawMarkdown + '▌'; };
-          await callStream(key, model, bDirectPrompt(arr.join('\n\n---\n\n'), opts), onC, 4000);
+          await callStream(cfg, bDirectPrompt(arr.join('\n\n---\n\n'), opts), onC, 4000);
           document.getElementById('progress-bar').classList.remove('streaming');
         } else {
           const chunks = []; for (let i = 0; i < arr.length; i += CHUNK_SIZE)chunks.push(arr.slice(i, i + CHUNK_SIZE));
@@ -1276,28 +1587,29 @@ ${tweets}`;
             if (abortRequested) throw new Error('Cancelled');
             setPct(Math.round((i / chunks.length) * 72));
             setStatus(`<div style="padding:4px 0;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink3);margin-bottom:10px;">Pass 1 of 2 — Pattern extraction</div><div style="font-size:13px;color:var(--ink2);margin-bottom:14px;">Batch <strong>${i + 1}</strong> of <strong>${chunks.length}</strong> <span style="color:var(--ink3);font-size:11px;">· ${chunks[i].length} tweets · ${arr.length} total</span></div><div class="batch-grid">${gridHTML(i, i, chunks.length)}</div><div style="font-size:11px;color:var(--ink3);margin-top:10px;">Extracting style patterns from each batch…</div></div>`);
-            reports.push(await callQuiet(key, model, bChunkPrompt(chunks[i].join('\n\n---\n\n'), i, chunks.length)));
+            reports.push(await callQuiet(cfg, bChunkPrompt(chunks[i].join('\n\n---\n\n'), i, chunks.length)));
           }
           setPct(76);
           setStatus(`<div style="padding:4px 0;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:10px;">Pass 2 of 2 — Synthesis</div><div style="font-size:13px;color:var(--ink2);margin-bottom:14px;">Merging <strong>${chunks.length} pattern reports</strong> · <strong>${arr.length} tweets</strong><span class="cursor"></span></div><div class="batch-grid">${gridHTML(chunks.length, -1, chunks.length)}</div><div style="font-size:11px;color:var(--ink3);margin-top:10px;">Weighing patterns by cross-batch frequency…</div></div>`);
           const onC = t => { rawMarkdown += t; if (activeTab === 'raw') document.getElementById('rulebook-raw').textContent = rawMarkdown + '▌'; setPct(Math.min(98, 76 + rawMarkdown.length / 100)); };
-          await callStream(key, model, bSynthPrompt(reports, arr.length, opts), onC, 4000);
+          await callStream(cfg, bSynthPrompt(reports, arr.length, opts), onC, 4000);
           setPct(100);
         }
         renderOutput();
         document.getElementById('btn-copy').disabled = false;
         document.getElementById('btn-download').disabled = false;
+        setRequestStatus(cfg.mockMode ? 'Mock mode completed successfully.' : 'Done.');
         showToast('Rulebook ready — ' + arr.length + ' tweets analyzed');
       } catch (err) {
         document.getElementById('progress-bar').classList.remove('streaming', 'active');
-        if (err.message !== 'Cancelled') { setStatus(`<div class="error-box"><strong>Error:</strong> ${err.message}<br><br>Check your API key and try again.</div>`); showToast('Error: ' + err.message); }
+        if (err.message !== 'Cancelled') { setStatus(`<div class="error-box"><strong>Error:</strong> ${err.message}<br><br>Provider: <strong>${cfg.provider}</strong>. Check endpoint, model identifier, and API key.</div>`); setRequestStatus(err.message, true); showToast('Error: ' + err.message); }
         else { document.getElementById('empty-state').style.display = 'flex'; document.getElementById('rulebook-rendered').style.display = 'none'; showToast('Cancelled'); }
       } finally {
         btn.classList.remove('loading'); btn.disabled = false; cBtn.style.display = 'none';
         setTimeout(() => { document.getElementById('progress-bar').classList.remove('active'); document.getElementById('progress-fill').style.width = '0%'; }, 1000);
       }
     }
-    function cancelGeneration() { abortRequested = true; }
+    function cancelGeneration() { abortRequested = true; setRequestStatus('Cancelling request…'); }
     function renderOutput() {
       if (activeTab === 'raw') { document.getElementById('rulebook-rendered').style.display = 'none'; document.getElementById('rulebook-raw').style.display = 'block'; document.getElementById('rulebook-raw').textContent = rawMarkdown; return; }
       document.getElementById('rulebook-raw').style.display = 'none'; document.getElementById('rulebook-rendered').style.display = 'block';
